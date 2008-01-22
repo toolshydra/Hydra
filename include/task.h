@@ -31,9 +31,9 @@ private:
 	double Ib;
 	double Ia;
 	double Ij;
-	IloNumArray resources;
+//	IloNumArray resources;
 public:
-	Task(IloEnv &env) :resources(env)
+	Task(IloEnv &env) //:resources(env)
 	{
 		period = deadline = wcec = computation = Ip = Ib = Ij = 0.0;
 	}
@@ -119,7 +119,7 @@ public:
 	}
 	double getResource(int i)
 	{
-		return resources[i];
+		return 0;// resources[i];
 	}
 	double getResponse(void)
 	{
@@ -127,7 +127,7 @@ public:
 	}
 	double getResourceUsage(int i)
 	{
-		return (resources[i] * computation);
+		return 0;//(resources[i] * computation);
 	}
 	double getPrecedenceInfluence(double w)
 	{
@@ -143,7 +143,7 @@ public:
 		return os;
 	};
 	friend istream& operator >>(istream &is, Task &task) {
-		is >> task.priority >> task.wcec >> task.period >> task.deadline >> task.Ij >> task.Ib >> task.resources;
+		is >> task.priority >> task.wcec >> task.period >> task.deadline >> task.Ij >> task.Ib ;//>> task.resources;
 		return is;
 	};
 };
