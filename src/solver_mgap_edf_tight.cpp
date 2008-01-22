@@ -19,6 +19,7 @@ static IloNumArray2 cycles, voltage, frequency;
 static IloNumArray priority;
 static IloNumArray period;
 static IloNumArray Deadline;
+static IloNum Pidle = 0.260;
 
 ILOINCUMBENTCALLBACK2(TightCallback, IloArray<IloArray<IloNumVarArray> > &, vars, IloEnv &, _env) {
 	struct runInfo runtime;
@@ -340,6 +341,7 @@ int main(int argc, char **argv)
 							(voltage[i][k] * voltage[i][k]);
 					C[i][j][k] = cycles[i][j] / (frequency[i][k]);
 					U[i][j][k] = C[i][j][k] / period[j];
+					energy[i][j][k] += LCM * (1.0 - U[i][j][k]) * Pidle;
 				}
 			}
 		}
@@ -391,6 +393,10 @@ int main(int argc, char **argv)
 			cplex.setParam(IloCplex::Param::ClockType, 2); /* Wallclock */
 			cplex.setParam(IloCplex::TiLim, seconds);
 		}
+		cplex.setParam(IloCplex::Threads, 1);
+		cplex.setParam(IloCplex::WorkMem, 1024);
+		cplex.setParam(IloCplex::TreLim, 2048);
+		cplex.setParam(IloCplex::Param::Parallel, 1); /* Deterministic */
 		cplex.extract(model);
 
 		gettimeofday(&st, NULL);
