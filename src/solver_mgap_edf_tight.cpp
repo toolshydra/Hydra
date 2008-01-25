@@ -146,12 +146,14 @@ static void dumpConfigurationInfo(IloEnv &_env,
 	dec.end();
 }
 
-static const char *short_options = "hsd:tm:ri";
+static const char *short_options = "hsd:tm:riu";
 static const struct option long_options[] = {
 	{ "help",     0, NULL, 'h' },
 	{ "model",     0, NULL, 'm' },
 	{ "deadline",     required_argument, NULL, 'd' },
 	{ "solution",     0, NULL, 's' },
+	{ "initial-point",     0, NULL, 'i' },
+	{ "upper-cut",     0, NULL, 'u' },
 	{ "relax-integrity",     0, NULL, 'r' },
 	{ "statistics",     0, NULL, 't' },
 	{ NULL,       0, NULL, 0   },   /* Required at end of array.  */
@@ -163,6 +165,7 @@ static void print_usage(char *program_name)
 	printf(
 	"  -h  --help                             Display this usage information.\n"
 	"  -m  --model=<modelfile>                Read model specification from modelfile.\n"
+	"  -u  --upper-cut                        Upper cut from modelfile.\n"
 	"  -d  --deadline=<seconds>               Limit the execution to seconds.\n"
 	"  -s  --solution                         Print at the end the found solution.\n"
 	"  -i  --initial-point		  	  Start search from a known solution as starting point (read from model).\n"
@@ -254,8 +257,9 @@ int main(int argc, char **argv)
 	struct timeval st, e;
 	const char* filename  = "mgap-rm.dat";
 	IloEnv env;
+	IloNum uppercut;
 	IloNumArray3 sol(env);
-	bool good, stats = false, solution = false, relax_int = false, init = false;
+	bool good, stats = false, solution = false, relax_int = false, init = false, cut = false;
 	long etimes;
 	double energyS;
 	int next_option;
@@ -296,6 +300,9 @@ int main(int argc, char **argv)
 		case 'i':   /* -r or --initial-point */
 			init = true;
 			break;
+		case 'u':   /* -u or --upper-cutt */
+			cut = true;
+			break;
 		case 't':   /* -t or --statistics */
 			stats = true;
 			break;
@@ -324,6 +331,8 @@ int main(int argc, char **argv)
 		period = IloNumArray(env);
 		Deadline = IloNumArray(env);
 		file >> alpha >> priority >> period >> Deadline >> cycles >> voltage >> frequency;
+		if (cut)
+			file >> uppercut;
 		if (init)
 			file >> sol;
 
@@ -418,6 +427,10 @@ int main(int argc, char **argv)
 		cplex.setParam(IloCplex::Param::Parallel, 1); /* Deterministic */
 
 		cplex.extract(model);
+
+		if (cut) {
+		        cplex.setParam(IloCplex::CutUp, uppercut + 1);
+		}
 
 		/* do we have a starting point ? */
 		if (init) {
