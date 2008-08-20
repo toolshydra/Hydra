@@ -214,16 +214,23 @@ void compute_precedence_influency(int ntasks, struct task *tasks)
 	}
 }
 
-int main()
+int main(int argc, char *argv[])
 {
 	int ntasks;
 	int nresources;
 	int *resource_priorities;
 	struct task *tasks;
+	int verbose = 0;
 
-	printf("*---------------------------------------------------*\n");
-	printf("* Scalability Test and Initial Frequency Calculator *\n");
-	printf("*---------------------------------------------------*\n");
+	if (argc > 1)
+		verbose = strcmp(argv[1], "-v") == 0;
+
+	if (verbose) {
+		printf("*---------------------------------------------------*\n");
+		printf("* Scalability Test and Initial Frequency Calculator *\n");
+		printf("*---------------------------------------------------*\n");
+	}
+
 	scanf("%d %d", &ntasks, &nresources);
 
 	if (read_task_model(ntasks, nresources, &tasks) < 0) {
@@ -231,11 +238,15 @@ int main()
 		return -EINVAL;
 	}
 	compute_resource_priorities(ntasks, nresources, tasks, &resource_priorities);
-	print_task_model(ntasks, nresources, tasks, resource_priorities);
+	if (verbose)
+		print_task_model(ntasks, nresources, tasks, resource_priorities);
 
 	compute_exclusion_influency(ntasks, nresources, tasks, resource_priorities);
 	compute_precedence_influency(ntasks, tasks);
-	print_task_influencies(ntasks, tasks);
+
+	if (verbose)
+		print_task_influencies(ntasks, tasks);
+
 	print_task_analysis(ntasks, tasks);
 
 	return 0;
