@@ -75,7 +75,7 @@ void print_task_model(int ntasks, int nresources,
 	printf("* Task Model *\n");
 	printf("**************\n");
 	printf("%02d tasks, %02d resources\n", ntasks, nresources);
-	printf("Task\tPriority\tComputation\tDeadline\tJitter\n");
+	printf("Task\tPriority\tComputation\tDeadline\n");
 
 	for (i = 0; i < ntasks; i++)
 		printf ("T%d\t%d\t\t%.2f\t\t%.2f\n", i + 1, i,
