@@ -7,6 +7,7 @@
 #define N_TRIES	5
 struct task {
 	float deadline;
+	float wcec;
 	float computation;
 	float Ip;
 	float Ib;
@@ -36,8 +37,8 @@ int read_array (int n, float **a)
 
 }
 
-int read_task_model(int ntasks, int nresources,
-			struct task **tasks)
+int read_task_model(int ntasks, struct task **tasks, int nfrequencies,
+			float **frequencies, int nresources)
 {
 	int i = 0;
 	int err;
@@ -49,10 +50,16 @@ int read_task_model(int ntasks, int nresources,
 		return -ENOMEM;
 	}
 
+	err = read_array(nfrequencies, frequencies);
+	if (err < 0) {
+		printf("Could not read array of frequencies.\n");
+		return err;
+	}
+
 	do {
 		struct task *t = *tasks + i;
 
-		scanf("%f %f %f", &t->computation, &t->deadline, &t->Ij);
+		scanf("%f %f %f", &t->wcec, &t->deadline, &t->Ij);
 
 		err = read_array(nresources, &t->resources);
 		if (err < 0) {
@@ -66,8 +73,9 @@ int read_task_model(int ntasks, int nresources,
 	return 0;
 }
 
-void print_task_model(int ntasks, int nresources,
-			struct task *tasks, int *resource_priorities)
+// print_task_model(ntasks, tasks, nresources, resource_priorities);
+void print_task_model(int ntasks, struct task *tasks,
+			int nresources, int *resource_priorities)
 {
 	int i;
 
@@ -106,6 +114,7 @@ void print_task_model(int ntasks, int nresources,
 
 }
 
+// print_task_influencies(ntasks, tasks);
 void print_task_influencies(int ntasks, struct task *tasks)
 {
 	int i;
@@ -121,30 +130,60 @@ void print_task_influencies(int ntasks, struct task *tasks)
 	}
 }
 
-void print_task_analysis(int ntasks, struct task *tasks)
+// print_task_analysis(ntasks, tasks, verbose);
+void print_task_analysis(int ntasks, struct task *tasks, int verbose)
 {
-	int i;
+	int i, ok;
+	char f[10];
+	char di, de;
+	float s = 0;
 
-	printf("\n************\n");
-	printf("* Analysis *\n");
-	printf("************\n");
-	printf("Task\tComputation\tI\t\tResponse\tDeadline\tK (D - I)\tD - R\n");
+	if (verbose) {
+		printf("\n************\n");
+		printf("* Analysis *\n");
+		printf("************\n");
+		printf("Task\tComputation\tI\t\tResponse\tDeadline\tK (D - I)\tD - R\n");
+	}
+
+	printf("\t[ ");
+	ok = 1;
 	for (i = 0; i < ntasks; i++) {
 		float I = tasks[i].Ip + tasks[i].Ib + tasks[i].Ij;
-		printf("T%d\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f\n", i + 1,
-			tasks[i].computation, I,
-			tasks[i].computation + I,
-			tasks[i].deadline,
-			tasks[i].deadline - I,
-			tasks[i].deadline - (tasks[i].computation + I));
+		if (verbose)
+			printf("T%d\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f\n", i + 1,
+				tasks[i].computation, I,
+				tasks[i].computation + I,
+				tasks[i].deadline,
+				tasks[i].deadline - I,
+				tasks[i].deadline - (tasks[i].computation + I));
+		if (tasks[i].deadline < (tasks[i].computation + I)) {
+			di = '<';
+			de = '>';
+			ok = 0;
+		} else {
+			di = ' ';
+			de = ' ';
+		}
+
+		sprintf(f, "%7.2f", tasks[i].deadline - (tasks[i].computation + I));
+		printf("%c%7s%c ", di, f, de);
+
+		s += tasks[i].deadline - (tasks[i].computation + I);
 	}
+
+	printf("]\t%-4s ", ok ? "OK": "NOT");
+	if (ok)
+		printf("%7.2f", s);
+	printf("\n");
 }
 
 /*
  * Compute resource priorities
  */
-void compute_resource_priorities(int ntasks, int nresources,
-					struct task *tasks, int **priorities)
+
+// compute_resource_priorities(ntasks, tasks, nresources, &resource_priorities);
+void compute_resource_priorities(int ntasks, struct task *tasks,
+					int nresources, int **priorities)
 {
 	int *p;
 	int i, j;
@@ -163,8 +202,9 @@ void compute_resource_priorities(int ntasks, int nresources,
 	}
 }
 
-void compute_exclusion_influency(int ntasks, int nresources,
-					struct task *tasks, int *priorities)
+// compute_exclusion_influency(ntasks, tasks, nresources, resource_priorities);
+void compute_exclusion_influency(int ntasks, struct task *tasks,
+					int nresources, int *priorities)
 {
 	int i, j, k;
 
@@ -183,6 +223,7 @@ void compute_exclusion_influency(int ntasks, int nresources,
 
 }
 
+// compute_precedence_influency(ntasks, tasks);
 void compute_precedence_influency(int ntasks, struct task *tasks)
 {
 	int i, j;
@@ -214,13 +255,37 @@ void compute_precedence_influency(int ntasks, struct task *tasks)
 	}
 }
 
+//	compute_sample_analysis(ntasks, tasks, nresources, verbose);
+void compute_sample_analysis(int ntasks, struct task *tasks,
+				int nresources, int verbose)
+{
+	int *resource_priorities;
+
+	compute_resource_priorities(ntasks, tasks, nresources, &resource_priorities);
+	if (verbose)
+		print_task_model(ntasks, tasks, nresources, resource_priorities);
+
+	compute_exclusion_influency(ntasks, tasks, nresources, resource_priorities);
+	compute_precedence_influency(ntasks, tasks);
+
+	if (verbose)
+		print_task_influencies(ntasks, tasks);
+
+	print_task_analysis(ntasks, tasks, verbose);
+}
+
 int main(int argc, char *argv[])
 {
 	int ntasks;
 	int nresources;
+	int nfrequencies;
+	float *frequencies;
 	int *resource_priorities;
 	struct task *tasks;
 	int verbose = 0;
+
+	int i, n = 1;
+	int *ind;
 
 	if (argc > 1)
 		verbose = strcmp(argv[1], "-v") == 0;
@@ -231,23 +296,42 @@ int main(int argc, char *argv[])
 		printf("*---------------------------------------------------*\n");
 	}
 
-	scanf("%d %d", &ntasks, &nresources);
+	scanf("%d %d %d", &ntasks, &nfrequencies, &nresources);
 
-	if (read_task_model(ntasks, nresources, &tasks) < 0) {
+	if (read_task_model(ntasks, &tasks, nfrequencies, &frequencies, nresources) < 0) {
 		printf("Error while reading task model\n");
 		return -EINVAL;
 	}
-	compute_resource_priorities(ntasks, nresources, tasks, &resource_priorities);
-	if (verbose)
-		print_task_model(ntasks, nresources, tasks, resource_priorities);
 
-	compute_exclusion_influency(ntasks, nresources, tasks, resource_priorities);
-	compute_precedence_influency(ntasks, tasks);
 
-	if (verbose)
-		print_task_influencies(ntasks, tasks);
+	ind = malloc(ntasks * sizeof(int));
 
-	print_task_analysis(ntasks, tasks);
+	if (!ind) {
+		printf("Could not allocate memory for indices.\n");
+		return -ENOMEM;
+	}
+
+	memset(ind, ntasks, 0);
+
+	while (ind[0] < nfrequencies) {
+
+		printf("%03d -", n++);
+		for (i = 0; i < ntasks; i++) {
+			tasks[i].computation = tasks[i].wcec / frequencies[ind[i]];
+			printf(" %6.2f", tasks[i].computation);
+		}
+		printf("\t");
+
+		compute_sample_analysis(ntasks, tasks, nresources, verbose);
+
+		i = ntasks - 1;
+		while (++ind[i] >= nfrequencies) {
+			if (ind[0] == nfrequencies)
+				break;
+			ind[i] = 0;
+			i--;
+		}
+	}
 
 	return 0;
 }
