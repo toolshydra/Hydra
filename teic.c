@@ -284,7 +284,8 @@ int main(int argc, char *argv[])
 	struct task *tasks;
 	int verbose = 0;
 
-	int i, n = 1;
+	int i, j;
+	int *limits;
 	int *ind;
 
 	if (argc > 1)
@@ -305,17 +306,32 @@ int main(int argc, char *argv[])
 
 
 	ind = malloc(ntasks * sizeof(int));
-
 	if (!ind) {
 		printf("Could not allocate memory for indices.\n");
 		return -ENOMEM;
 	}
-
 	memset(ind, ntasks, 0);
 
-	while (ind[0] < nfrequencies) {
+	limits = malloc(ntasks * sizeof(int));
+	if (!limits) {
+		printf("Could not allocate memory for indices.\n");
+		return -ENOMEM;
+	}
+	for (i = 0 ; i < ntasks; i++)
+		limits[i] = nfrequencies;
 
-		printf("%03d -", n++);
+	for (i = nfrequencies - 1; i >= 0 ; i--) {
+		for (j = 0; j < ntasks; j++) {
+			tasks[j].computation = tasks[j].wcec / frequencies[i];
+			if (tasks[j].computation > tasks[j].deadline)
+				limits[j] = i;
+		}
+	}
+
+	j = 1;
+	while (ind[0] < limits[0]) {
+
+		printf("%03d -", j++);
 		for (i = 0; i < ntasks; i++) {
 			tasks[i].computation = tasks[i].wcec / frequencies[ind[i]];
 			printf(" %6.2f", tasks[i].computation);
@@ -325,8 +341,8 @@ int main(int argc, char *argv[])
 		compute_sample_analysis(ntasks, tasks, nresources, verbose);
 
 		i = ntasks - 1;
-		while (++ind[i] >= nfrequencies) {
-			if (ind[0] == nfrequencies)
+		while (++ind[i] >= limits[i]) {
+			if (ind[0] == limits[0])
 				break;
 			ind[i] = 0;
 			i--;
