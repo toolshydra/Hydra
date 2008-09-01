@@ -15,6 +15,13 @@ struct task {
 	float *resources;
 };
 
+/*
+ * read_array: Reads an array of floats which may represent a sequence of
+ * 		task's properties
+ * @parameter n: number of floats
+ * @parameter a: array of floats, which will be filled with read values
+ * @complexity: O(n)
+ */
 int read_array (int n, float **a)
 {
 	int j = 0;
@@ -37,6 +44,16 @@ int read_array (int n, float **a)
 
 }
 
+/*
+ * read_task_model: Reads needed info
+ * @parameter ntasks: number of tasks
+ * @parameter tasks: array of tasks, which will be filled up with task values
+ * @parameter nfrequencies: number of frequencies
+ * @parameter frequencies: array of floats which will be filled up with
+ * 			   available frequencies
+ * @parameter nresources: integer which represents the number of resources
+ * @complexity: O(nfrequencies) + O(ntasks x nresources)
+ */
 int read_task_model(int ntasks, struct task **tasks, int nfrequencies,
 			float **frequencies, int nresources)
 {
@@ -50,7 +67,7 @@ int read_task_model(int ntasks, struct task **tasks, int nfrequencies,
 		return -ENOMEM;
 	}
 
-	err = read_array(nfrequencies, frequencies);
+	err = read_array(nfrequencies, frequencies); /* O(nfrequencies) */
 	if (err < 0) {
 		printf("Could not read array of frequencies.\n");
 		return err;
@@ -61,9 +78,10 @@ int read_task_model(int ntasks, struct task **tasks, int nfrequencies,
 
 		scanf("%f %f %f", &t->wcec, &t->deadline, &t->Ij);
 
-		err = read_array(nresources, &t->resources);
+		err = read_array(nresources, &t->resources); /* O(nres) */
 		if (err < 0) {
-			printf("Could not read array of resources for task %d.\n", i);
+			printf("Could not read array of resources for task"
+				" %d.\n", i);
 			return err;
 		}
 
@@ -73,7 +91,14 @@ int read_task_model(int ntasks, struct task **tasks, int nfrequencies,
 	return 0;
 }
 
-// print_task_model(ntasks, tasks, nresources, resource_priorities);
+/*
+ * print_task_model: prints task model info in a human readable way
+ * @parameter ntasks: number of tasks
+ * @parameter tasks: array of tasks
+ * @parameter nresources: integer which represents the number of resources
+ * @parameter resource_priorities: array of integer with resources priorities
+ * @complexity: O(ntasks) + 2xO(nresources) + O(ntasks x nresources)
+ */
 void print_task_model(int ntasks, struct task *tasks,
 			int nresources, int *resource_priorities)
 {
@@ -114,7 +139,12 @@ void print_task_model(int ntasks, struct task *tasks,
 
 }
 
-// print_task_influencies(ntasks, tasks);
+/*
+ * print_task_influencies: prints each task influence component
+ * @parameter ntasks: number of tasks
+ * @parameter tasks: array of tasks
+ * @complexity: O(ntasks)
+ */
 void print_task_influencies(int ntasks, struct task *tasks)
 {
 	int i;
@@ -130,7 +160,13 @@ void print_task_influencies(int ntasks, struct task *tasks)
 	}
 }
 
-// print_task_analysis(ntasks, tasks, verbose);
+/*
+ * print_task_analysis: prints each task influence component
+ * @parameter ntasks: number of tasks
+ * @parameter tasks: array of tasks
+ * @parameter verbose: determines is the output will be verbose
+ * @complexity: O(ntasks)
+ */
 void print_task_analysis(int ntasks, struct task *tasks, int verbose)
 {
 	int i, ok;
@@ -178,10 +214,13 @@ void print_task_analysis(int ntasks, struct task *tasks, int verbose)
 }
 
 /*
- * Compute resource priorities
+ * compute_resource_priorities: Compute resource priorities
+ * @parameter ntasks: number of tasks
+ * @parameter tasks: array of tasks
+ * @parameter nresources: integer which represents the number of resources
+ * @parameter priorities: array of integer which will be filled with priorities
+ * @complexity: O(ntasks x nresources)
  */
-
-// compute_resource_priorities(ntasks, tasks, nresources, &resource_priorities);
 void compute_resource_priorities(int ntasks, struct task *tasks,
 					int nresources, int **priorities)
 {
@@ -202,7 +241,14 @@ void compute_resource_priorities(int ntasks, struct task *tasks,
 	}
 }
 
-// compute_exclusion_influency(ntasks, tasks, nresources, resource_priorities);
+/*
+ * compute_exclusion_influency: Compute exclusion influency of each task
+ * @parameter ntasks: number of tasks
+ * @parameter tasks: array of tasks
+ * @parameter nresources: integer which represents the number of resources
+ * @parameter priorities: array of integer with resource priorities
+ * @complexity: O(nresources x ntasks ^ 2)
+ */
 void compute_exclusion_influency(int ntasks, struct task *tasks,
 					int nresources, int *priorities)
 {
@@ -223,7 +269,12 @@ void compute_exclusion_influency(int ntasks, struct task *tasks,
 
 }
 
-// compute_precedence_influency(ntasks, tasks);
+/*
+ * compute_precedence_influency: Compute precedence influency of each task
+ * @parameter ntasks: number of tasks
+ * @parameter tasks: array of tasks
+ * @complexity: O(ntasks ^ 2)
+ */
 void compute_precedence_influency(int ntasks, struct task *tasks)
 {
 	int i, j;
@@ -255,25 +306,41 @@ void compute_precedence_influency(int ntasks, struct task *tasks)
 	}
 }
 
-//	compute_sample_analysis(ntasks, tasks, nresources, verbose);
+/*
+ * compute_sample_analysis: compute influency for each task
+ * @parameter ntasks: number of tasks
+ * @parameter tasks: array of tasks
+ * @parameter nresources: integer which represents the number of resources
+ * @parameter verbose: determines if output will be verbose
+ * @complexity: O(nresources x ntasks ^ 2)
+ */
 void compute_sample_analysis(int ntasks, struct task *tasks,
 				int nresources, int verbose)
 {
 	int *resource_priorities;
 
+ 	/* O(ntasks x nresources) */
 	compute_resource_priorities(ntasks, tasks, nresources, &resource_priorities);
 	if (verbose)
+ 	/* O(ntasks) + 2xO(nresources) + O(ntasks x nresources) */
 		print_task_model(ntasks, tasks, nresources, resource_priorities);
 
+ 	/* O(nresources x ntasks ^ 2) */
 	compute_exclusion_influency(ntasks, tasks, nresources, resource_priorities);
+ 	/* O(ntasks ^ 2) */
 	compute_precedence_influency(ntasks, tasks);
 
 	if (verbose)
+ 	/* O(ntasks) */
 		print_task_influencies(ntasks, tasks);
 
+ 	/* O(ntasks) */
 	print_task_analysis(ntasks, tasks, verbose);
 }
 
+/*
+ * @complexity: O(nfrequencies ^ ntasks) x O(nresources x ntasks ^ 2)
+ */
 int main(int argc, char *argv[])
 {
 	int ntasks;
@@ -299,6 +366,7 @@ int main(int argc, char *argv[])
 
 	scanf("%d %d %d", &ntasks, &nfrequencies, &nresources);
 
+ 	/* O(nfrequencies) + O(ntasks x nresources) */
 	if (read_task_model(ntasks, &tasks, nfrequencies, &frequencies, nresources) < 0) {
 		printf("Error while reading task model\n");
 		return -EINVAL;
