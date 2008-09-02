@@ -179,20 +179,20 @@ void print_task_analysis(int ntasks, struct task *tasks, int verbose)
 		printf("* Analysis *\n");
 		printf("************\n");
 		printf("Task\tComputation\tI\t\tResponse\tDeadline\tK (D - I)\tD - R\n");
-	}
+	} else
+		printf("\t[ ");
 
-	printf("\t[ ");
 	ok = 1;
 	for (i = 0; i < ntasks; i++) {
-		float I = tasks[i].Ip + tasks[i].Ib + tasks[i].Ij;
+		float R = tasks[i].Ip + tasks[i].Ij;
 		if (verbose)
 			printf("T%d\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f\n", i + 1,
-				tasks[i].computation, I,
-				tasks[i].computation + I,
+				tasks[i].computation, 0,
+				R,
 				tasks[i].deadline,
-				tasks[i].deadline - I,
-				tasks[i].deadline - (tasks[i].computation + I));
-		if (tasks[i].deadline < (tasks[i].computation + I)) {
+				0,
+				tasks[i].deadline - R);
+		if (tasks[i].deadline < R) {
 			di = '<';
 			de = '>';
 			ok = 0;
@@ -201,16 +201,19 @@ void print_task_analysis(int ntasks, struct task *tasks, int verbose)
 			de = ' ';
 		}
 
-		sprintf(f, "%7.2f", tasks[i].deadline - (tasks[i].computation + I));
-		printf("%c%7s%c ", di, f, de);
+		sprintf(f, "%7.2f", tasks[i].deadline - R);
+		if (!verbose)
+			printf("%c%7s%c ", di, f, de);
 
-		s += tasks[i].deadline - (tasks[i].computation + I);
+		s += tasks[i].deadline - R;
 	}
 
-	printf("]\t%-4s ", ok ? "OK": "NOT");
-	if (ok)
-		printf("%7.2f", s);
-	printf("\n");
+	if (!verbose) {
+		printf("]\t%-4s ", ok ? "OK": "NOT");
+		if (ok)
+			printf("%7.2f", s);
+		printf("\n");
+	}
 }
 
 /*
@@ -279,25 +282,22 @@ void compute_precedence_influency(int ntasks, struct task *tasks)
 {
 	int i, j;
 	int success;
-	int tries;
 	float Ip, Ipa;
 
 	for (i = 0; i < ntasks; i++) {
-		tries = 1;
-		Ip = tasks[i].computation;
+		Ip = tasks[i].computation + tasks[i].Ib;
 		success = 0;
-		while (!success && tries <= N_TRIES) {
+		while (!success && Ip <= tasks[i].deadline) {
 			Ipa = Ip;
-			Ip = 0;
+			Ip = tasks[i].computation + tasks[i].Ib;
 			for (j = i - 1; j >= 0; j--)
 				Ip += ceil((Ipa + tasks[j].Ij) / tasks[j].deadline) * tasks[j].computation;
-
-			if (Ip == 0)
+/*
+			if (Ip == )
 				Ip = Ipa;
-
+*/
 			if (Ip == Ipa)
 				success = 1;
-			tries++;
 		}
 		if (success)
 			tasks[i].Ip = Ip;
