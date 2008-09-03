@@ -128,8 +128,7 @@ void print_task_analysis(int ntasks, struct task *tasks, int verbose)
 			de = ' ';
 		}
 
-		sprintf(f, "%7.2f", tasks[i].deadline -
-			(tasks[i].computation + I));
+		sprintf(f, "%7.2f", tasks[i].deadline - R);
 		if (!verbose)
 			printf("%c%7s%c ", di, f, de);
 
