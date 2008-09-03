@@ -25,11 +25,13 @@ struct task {
 #define	task_res_use(t, i)		(t.resources[i] * t.computation)
 #define precedence_influency(t, w)	(ceil((w + t.Ij) / t.deadline) * \
 							t.computation)
+#define response(t)		(t.Ip + t.Ij)
 
 void print_task_model(int ntasks, struct task *tasks,
 			int nresources, int *resource_priorities);
 void print_task_influencies(int ntasks, struct task *tasks);
-void print_task_analysis(int ntasks, struct task *tasks, int verbose);
+void print_task_analysis(int ntasks, struct task *tasks);
+void evaluate_sample_response(int ntasks, struct task *tasks);
 void compute_resource_priorities(int ntasks, struct task *tasks,
 					int nresources, int **priorities);
 void compute_exclusion_influency(int ntasks, struct task *tasks,

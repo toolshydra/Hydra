@@ -158,11 +158,10 @@ int main(int argc, char *argv[])
 		for (i = 0; i < ntasks; i++) {
 			tasks[i].computation = tasks[i].wcec /
 							frequencies[ind[i]];
-			printf(" %6.2f", tasks[i].computation);
 		}
-		printf("\t");
 
 		compute_sample_analysis(ntasks, tasks, nresources, verbose);
+		evaluate_sample_response(ntasks, tasks);
 
 		i = ntasks - 1;
 		while (++ind[i] >= limits[i]) {

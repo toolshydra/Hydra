@@ -86,61 +86,80 @@ void print_task_influencies(int ntasks, struct task *tasks)
 }
 
 /*
- * print_task_analysis: prints each task influence component
+ * print_task_analysis: prints each task computed data
  * @parameter ntasks: number of tasks
  * @parameter tasks: array of tasks
  * @parameter verbose: determines is the output will be verbose
  * @complexity: O(ntasks)
  */
-void print_task_analysis(int ntasks, struct task *tasks, int verbose)
+void print_task_analysis(int ntasks, struct task *tasks)
+{
+	int i;
+
+	printf("\n************\n");
+	printf("* Analysis *\n");
+	printf("************\n");
+	printf("Task\tComputation\tI\t\tResponse\tDeadline\tK (D - I)"
+								"\tD - R\n");
+
+	for (i = 0; i < ntasks; i++)
+		printf("T%d\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f\n",
+				i + 1,
+				tasks[i].computation,
+				0,
+				response(tasks[i]),
+				tasks[i].deadline,
+				0,
+				tasks[i].deadline - response(tasks[i]));
+
+}
+
+/*
+ * evaluate_sample_response: evaluates the sample viability
+ * @parameter ntasks: number of tasks
+ * @parameter tasks: array of tasks
+ * @parameter verbose: determines is the output will be verbose
+ * @complexity: O(ntasks)
+ */
+void evaluate_sample_response(int ntasks, struct task *tasks)
 {
 	int i, ok;
 	char f[10];
 	char di, de;
 	float s = 0;
 
-	if (verbose) {
-		printf("\n************\n");
-		printf("* Analysis *\n");
-		printf("************\n");
-		printf("Task\tComputation\tI\t\tResponse\tDeadline\tK (D - I)"
-								"\tD - R\n");
-	} else
-		printf("\t[ ");
+	for (i = 0; i < ntasks; i++)
+		printf(" %6.2f", tasks[i].computation);
+
+	printf("\t[ ");
 
 	ok = 1;
 	for (i = 0; i < ntasks; i++) {
-		float R = tasks[i].Ip + tasks[i].Ij;
-		if (verbose)
-			printf("T%d\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f"
-				"\t\t%.2f\n", i + 1,
-				tasks[i].computation, 0,
-				R,
-				tasks[i].deadline,
-				0,
-				tasks[i].deadline - R);
-		if (tasks[i].deadline < R) {
+		float dx;
+		if (tasks[i].deadline < response(tasks[i]) ||
+			(tasks[i].Ip < 0)) {
 			di = '<';
 			de = '>';
 			ok = 0;
+			dx = -1.0;
 		} else {
 			di = ' ';
 			de = ' ';
+			dx = tasks[i].deadline - response(tasks[i]);
 		}
 
-		sprintf(f, "%7.2f", tasks[i].deadline - R);
-		if (!verbose)
-			printf("%c%7s%c ", di, f, de);
+		sprintf(f, "%7.2f", dx);
+		printf("%c%7s%c ", di, f, de);
 
-		s += tasks[i].deadline - R;
+		s += dx;
 	}
 
-	if (!verbose) {
-		printf("]\t%-4s ", ok ? "OK": "NOT");
-		if (ok)
-			printf("%7.2f", s);
-		printf("\n");
-	}
+	if (ok)
+		printf("]\t%-4s %7.2f", "OK", s);
+	else
+		printf("]\t%-4s %7.2f", "NOT", -1.0);
+	printf("\n");
+
 }
 
 /*
@@ -256,10 +275,11 @@ void compute_sample_analysis(int ntasks, struct task *tasks,
 	/* O(ntasks ^ 2) */
 	compute_precedence_influency(ntasks, tasks);
 
-	if (verbose)
-	/* O(ntasks) */
+	if (verbose) {
+		/* O(ntasks) */
 		print_task_influencies(ntasks, tasks);
 
-	/* O(ntasks) */
-	print_task_analysis(ntasks, tasks, verbose);
+		/* O(ntasks) */
+		print_task_analysis(ntasks, tasks);
+	}
 }
