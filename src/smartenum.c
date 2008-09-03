@@ -97,6 +97,7 @@ int read_task_model(int ntasks, struct task **tasks, int nfrequencies,
  */
 int main(int argc, char *argv[])
 {
+	time_t s, e;
 	int ntasks;
 	int nresources;
 	int nfrequencies;
@@ -109,6 +110,8 @@ int main(int argc, char *argv[])
 	int i, j;
 	int *limits;
 	int *ind;
+
+	time(&s);
 
 	if (argc > 1)
 		verbose = strcmp(argv[1], "-v") == 0;
@@ -174,9 +177,12 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	time(&e);
 	printf("Summary\n");
 	printf("Number of Samples: %6.0f\n", pow(nfrequencies, ntasks));
 	printf("Number of Evaluated Samples: %6d\n", j - 1);
-	printf("Number of Feasible Samples: %6d\n", success);
+	printf("Number of Feasible Samples: %d\n", success);
+	printf("Time of processing: %.2fs\n", difftime(e, s));
+
 	return 0;
 }
