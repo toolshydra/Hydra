@@ -104,6 +104,7 @@ int main(int argc, char *argv[])
 	int *resource_priorities;
 	struct task *tasks;
 	int verbose = 0;
+	int success;
 
 	int i, j;
 	int *limits;
@@ -152,6 +153,7 @@ int main(int argc, char *argv[])
 	}
 
 	j = 1;
+	success = 0;
 	while (ind[0] < limits[0]) {
 
 		printf("%03d -", j++);
@@ -161,7 +163,7 @@ int main(int argc, char *argv[])
 		}
 
 		compute_sample_analysis(ntasks, tasks, nresources, verbose);
-		evaluate_sample_response(ntasks, tasks);
+		success += evaluate_sample_response(ntasks, tasks);
 
 		i = ntasks - 1;
 		while (++ind[i] >= limits[i]) {
@@ -172,5 +174,9 @@ int main(int argc, char *argv[])
 		}
 	}
 
+	printf("Summary\n");
+	printf("Number of Samples: %6.0f\n", pow(nfrequencies, ntasks));
+	printf("Number of Evaluated Samples: %6d\n", j - 1);
+	printf("Number of Feasible Samples: %6d\n", success);
 	return 0;
 }

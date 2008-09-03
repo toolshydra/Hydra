@@ -121,7 +121,7 @@ void print_task_analysis(int ntasks, struct task *tasks)
  * @parameter verbose: determines is the output will be verbose
  * @complexity: O(ntasks)
  */
-void evaluate_sample_response(int ntasks, struct task *tasks)
+int evaluate_sample_response(int ntasks, struct task *tasks)
 {
 	int i, ok;
 	char f[10];
@@ -160,6 +160,7 @@ void evaluate_sample_response(int ntasks, struct task *tasks)
 		printf("]\t%-4s %7.2f", "NOT", -1.0);
 	printf("\n");
 
+	return ok;
 }
 
 /*

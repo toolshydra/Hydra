@@ -31,7 +31,7 @@ void print_task_model(int ntasks, struct task *tasks,
 			int nresources, int *resource_priorities);
 void print_task_influencies(int ntasks, struct task *tasks);
 void print_task_analysis(int ntasks, struct task *tasks);
-void evaluate_sample_response(int ntasks, struct task *tasks);
+int evaluate_sample_response(int ntasks, struct task *tasks);
 void compute_resource_priorities(int ntasks, struct task *tasks,
 					int nresources, int **priorities);
 void compute_exclusion_influency(int ntasks, struct task *tasks,
