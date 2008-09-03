@@ -22,6 +22,10 @@ struct task {
 	float *resources;
 };
 
+#define	task_res_use(t, i)		(t.resources[i] * t.computation)
+#define precedence_influency(t, w)	(ceil((w + t.Ij) / t.deadline) * \
+							t.computation)
+
 void print_task_model(int ntasks, struct task *tasks,
 			int nresources, int *resource_priorities);
 void print_task_influencies(int ntasks, struct task *tasks);

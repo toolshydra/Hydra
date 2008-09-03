@@ -13,12 +13,12 @@
  * @parameter a: array of floats, which will be filled with read values
  * @complexity: O(n)
  */
-int read_array (int n, float **a)
+int read_array(int n, float **a)
 {
 	int j = 0;
 	float *c;
 
-	*a = malloc(sizeof (float) * n);
+	*a = malloc(sizeof(float) * n);
 
 	if (!a) {
 		printf("Could not allocate memory for array\n");
@@ -103,15 +103,16 @@ int main(int argc, char *argv[])
 		verbose = strcmp(argv[1], "-v") == 0;
 
 	if (verbose) {
-		printf("*---------------------------------------------------*\n");
-		printf("* Scalability Test and Initial Frequency Calculator *\n");
-		printf("*---------------------------------------------------*\n");
+		printf("*-------------------------------------------------*\n");
+		printf("*Scalability Test and Initial Frequency Calculator*\n");
+		printf("*-------------------------------------------------*\n");
 	}
 
 	scanf("%d %d %d", &ntasks, &nfrequencies, &nresources);
 
- 	/* O(nfrequencies) + O(ntasks x nresources) */
-	if (read_task_model(ntasks, &tasks, nfrequencies, &frequencies, nresources) < 0) {
+	/* O(nfrequencies) + O(ntasks x nresources) */
+	if (read_task_model(ntasks, &tasks, nfrequencies, &frequencies,
+							nresources) < 0) {
 		printf("Error while reading task model\n");
 		return -EINVAL;
 	}
@@ -145,7 +146,8 @@ int main(int argc, char *argv[])
 
 		printf("%03d -", j++);
 		for (i = 0; i < ntasks; i++) {
-			tasks[i].computation = tasks[i].wcec / frequencies[ind[i]];
+			tasks[i].computation = tasks[i].wcec /
+							frequencies[ind[i]];
 			printf(" %6.2f", tasks[i].computation);
 		}
 		printf("\t");

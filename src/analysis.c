@@ -36,7 +36,7 @@ void print_task_model(int ntasks, struct task *tasks,
 	printf("Task\tPriority\tComputation\tDeadline\n");
 
 	for (i = 0; i < ntasks; i++)
-		printf ("T%d\t%d\t\t%.2f\t\t%.2f\n", i + 1, i,
+		printf("T%d\t%d\t\t%.2f\t\t%.2f\n", i + 1, i,
 			tasks[i].computation, tasks[i].deadline);
 
 	printf("\n******************\n");
@@ -53,7 +53,7 @@ void print_task_model(int ntasks, struct task *tasks,
 		printf("T%d\t", i + 1);
 
 		for (j = 0; j < nresources; j++)
-			printf("%.2f\%\t", tasks[i].resources[j] * 100 );
+			printf("%.2f\%\t", tasks[i].resources[j] * 100);
 		printf("\n");
 
 	}
@@ -103,7 +103,8 @@ void print_task_analysis(int ntasks, struct task *tasks, int verbose)
 		printf("\n************\n");
 		printf("* Analysis *\n");
 		printf("************\n");
-		printf("Task\tComputation\tI\t\tResponse\tDeadline\tK (D - I)\tD - R\n");
+		printf("Task\tComputation\tI\t\tResponse\tDeadline\tK (D - I)"
+								"\tD - R\n");
 	} else
 		printf("\t[ ");
 
@@ -111,7 +112,8 @@ void print_task_analysis(int ntasks, struct task *tasks, int verbose)
 	for (i = 0; i < ntasks; i++) {
 		float R = tasks[i].Ip + tasks[i].Ij;
 		if (verbose)
-			printf("T%d\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f\n", i + 1,
+			printf("T%d\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f"
+				"\t\t%.2f\n", i + 1,
 				tasks[i].computation, 0,
 				R,
 				tasks[i].deadline,
@@ -126,7 +128,8 @@ void print_task_analysis(int ntasks, struct task *tasks, int verbose)
 			de = ' ';
 		}
 
-		sprintf(f, "%7.2f", tasks[i].deadline - R);
+		sprintf(f, "%7.2f", tasks[i].deadline -
+			(tasks[i].computation + I));
 		if (!verbose)
 			printf("%c%7s%c ", di, f, de);
 
@@ -155,7 +158,7 @@ void compute_resource_priorities(int ntasks, struct task *tasks,
 	int *p;
 	int i, j;
 
-	*priorities = malloc(sizeof (int) * nresources);
+	*priorities = malloc(sizeof(int) * nresources);
 	p = *priorities;
 	memset(p, -1, nresources);
 
@@ -187,10 +190,9 @@ void compute_exclusion_influency(int ntasks, struct task *tasks,
 		for (k = i + 1; k < ntasks; k++) {
 			for (j = 0; j < nresources; j++) {
 				/* If we have high priority */
-				if (priorities[j] <= i) {
-					if (tasks[k].resources[j] * tasks[k].computation > tasks[i].Ib)
-						tasks[i].Ib = tasks[k].resources[j] * tasks[k].computation;
-				}
+				if (priorities[j] <= i &&
+					task_res_use(tasks[k], j) > tasks[i].Ib)
+					tasks[i].Ib = task_res_use(tasks[k], j);
 			}
 		}
 	}
@@ -216,9 +218,9 @@ void compute_precedence_influency(int ntasks, struct task *tasks)
 			Ipa = Ip;
 			Ip = tasks[i].computation + tasks[i].Ib;
 			for (j = i - 1; j >= 0; j--)
-				Ip += ceil((Ipa + tasks[j].Ij) / tasks[j].deadline) * tasks[j].computation;
+				Ip += precedence_influency(tasks[j], Ipa);
 /*
-			if (Ip == )
+			if (Ip == 0)
 				Ip = Ipa;
 */
 			if (Ip == Ipa)
@@ -244,21 +246,24 @@ void compute_sample_analysis(int ntasks, struct task *tasks,
 {
 	int *resource_priorities;
 
- 	/* O(ntasks x nresources) */
-	compute_resource_priorities(ntasks, tasks, nresources, &resource_priorities);
+	/* O(ntasks x nresources) */
+	compute_resource_priorities(ntasks, tasks, nresources,
+						&resource_priorities);
 	if (verbose)
- 	/* O(ntasks) + 2xO(nresources) + O(ntasks x nresources) */
-		print_task_model(ntasks, tasks, nresources, resource_priorities);
+	/* O(ntasks) + 2xO(nresources) + O(ntasks x nresources) */
+		print_task_model(ntasks, tasks, nresources,
+						resource_priorities);
 
- 	/* O(nresources x ntasks ^ 2) */
-	compute_exclusion_influency(ntasks, tasks, nresources, resource_priorities);
- 	/* O(ntasks ^ 2) */
+	/* O(nresources x ntasks ^ 2) */
+	compute_exclusion_influency(ntasks, tasks, nresources,
+							resource_priorities);
+	/* O(ntasks ^ 2) */
 	compute_precedence_influency(ntasks, tasks);
 
 	if (verbose)
- 	/* O(ntasks) */
+	/* O(ntasks) */
 		print_task_influencies(ntasks, tasks);
 
- 	/* O(ntasks) */
+	/* O(ntasks) */
 	print_task_analysis(ntasks, tasks, verbose);
 }
