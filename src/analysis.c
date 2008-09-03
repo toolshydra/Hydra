@@ -219,10 +219,7 @@ void compute_precedence_influency(int ntasks, struct task *tasks)
 			Ip = tasks[i].computation + tasks[i].Ib;
 			for (j = i - 1; j >= 0; j--)
 				Ip += precedence_influency(tasks[j], Ipa);
-/*
-			if (Ip == 0)
-				Ip = Ipa;
-*/
+
 			if (Ip == Ipa)
 				success = 1;
 		}
