@@ -89,7 +89,6 @@ void print_task_influencies(int ntasks, struct task *tasks)
  * print_task_analysis: prints each task computed data
  * @parameter ntasks: number of tasks
  * @parameter tasks: array of tasks
- * @parameter verbose: determines is the output will be verbose
  * @complexity: O(ntasks)
  */
 void print_task_analysis(int ntasks, struct task *tasks)
@@ -115,10 +114,10 @@ void print_task_analysis(int ntasks, struct task *tasks)
 }
 
 /*
- * evaluate_sample_response: evaluates the sample viability
+ * evaluate_sample_response: evaluates the sample feasibility
  * @parameter ntasks: number of tasks
  * @parameter tasks: array of tasks
- * @parameter list: determines is the output will list each sample summary
+ * @parameter list: determines if the output will list each sample summary
  * @complexity: O(ntasks)
  */
 int evaluate_sample_response(int ntasks, struct task *tasks, int list)
@@ -173,7 +172,8 @@ int evaluate_sample_response(int ntasks, struct task *tasks, int list)
  * @parameter ntasks: number of tasks
  * @parameter tasks: array of tasks
  * @parameter nfrequencies: integer which represents the number of frequencies
- * @parameter nfrequencies: represents if initial drop will be done
+ * @parameter frequencies: array of float with available frequencies
+ * @parameter drop: represents if initial drop will be done
  * @parameter start_limits: array of integer which will be filled with limits
  * @complexity: O(ntasks x nfrequencies)
  */
@@ -389,5 +389,4 @@ int enumerate_samples(int ntasks, struct task *tasks, int nfrequencies,
 	return 0;
 
 }
-
 
