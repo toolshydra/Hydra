@@ -31,7 +31,7 @@ void print_task_model(int ntasks, struct task *tasks,
 			int nresources, int *resource_priorities);
 void print_task_influencies(int ntasks, struct task *tasks);
 void print_task_analysis(int ntasks, struct task *tasks);
-int evaluate_sample_response(int ntasks, struct task *tasks);
+int evaluate_sample_response(int ntasks, struct task *tasks, int list);
 int compute_initial_limits(int ntasks, struct task *tasks, int nfrequencies,
 				float *frequencies, int drop,
 				int **start_limits);
@@ -45,5 +45,5 @@ void compute_sample_analysis(int ntasks, struct task *tasks,
 int enumerate_samples(int ntasks, struct task *tasks, int nfrequencies,
 			float *frequencies, int nresources,
 			int *resource_priorities, int *limits, int verbose,
-			int *success, int *total);
+			int list, int *success, int *total);
 #endif

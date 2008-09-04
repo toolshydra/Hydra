@@ -118,20 +118,22 @@ void print_task_analysis(int ntasks, struct task *tasks)
  * evaluate_sample_response: evaluates the sample viability
  * @parameter ntasks: number of tasks
  * @parameter tasks: array of tasks
- * @parameter verbose: determines is the output will be verbose
+ * @parameter list: determines is the output will list each sample summary
  * @complexity: O(ntasks)
  */
-int evaluate_sample_response(int ntasks, struct task *tasks)
+int evaluate_sample_response(int ntasks, struct task *tasks, int list)
 {
 	int i, ok;
 	char f[10];
 	char di, de;
 	float s = 0;
 
-	for (i = 0; i < ntasks; i++)
-		printf(" %6.2f", tasks[i].computation);
+	if (list) {
+		for (i = 0; i < ntasks; i++)
+			printf(" %6.2f", tasks[i].computation);
 
-	printf("\t[ ");
+		printf("\t[ ");
+	}
 
 	ok = 1;
 	for (i = 0; i < ntasks; i++) {
@@ -149,16 +151,19 @@ int evaluate_sample_response(int ntasks, struct task *tasks)
 		}
 
 		sprintf(f, "%7.2f", dx);
-		printf("%c%7s%c ", di, f, de);
+		if (list)
+			printf("%c%7s%c ", di, f, de);
 
 		s += dx;
 	}
 
-	if (ok)
-		printf("]\t%-4s %7.2f", "OK", s);
-	else
-		printf("]\t%-4s %7.2f", "NOT", -1.0);
-	printf("\n");
+	if (list) {
+		if (ok)
+			printf("]\t%-4s %7.2f", "OK", s);
+		else
+			printf("]\t%-4s %7.2f", "NOT", -1.0);
+		printf("\n");
+	}
 
 	return ok;
 }
@@ -338,6 +343,7 @@ void compute_sample_analysis(int ntasks, struct task *tasks,
  * @parameter resource_priorities: array of integer with resource priorities
  * @parameter limits: array of integer with initial frequency limits
  * @parameter verbose: determines if output will be verbose
+ * @parameter list: determines if output will list each sample summary
  * @parameter success: output parameter with number of feasible samples
  * @parameter total: output parameter with total evaluated samples
  * @complexity: O(nfrequencies ^ ntasks) x O(nresources x ntasks ^ 2)
@@ -345,7 +351,7 @@ void compute_sample_analysis(int ntasks, struct task *tasks,
 int enumerate_samples(int ntasks, struct task *tasks, int nfrequencies,
 			float *frequencies, int nresources,
 			int *resource_priorities, int *limits, int verbose,
-			int *success, int *total)
+			int list, int *success, int *total)
 {
 	int i;
 	int *ind;
@@ -360,15 +366,16 @@ int enumerate_samples(int ntasks, struct task *tasks, int nfrequencies,
 	*total = 0;
 	*success = 0;
 	while (ind[0] < limits[0]) {
-
-		printf("%03d -", ++(*total));
+		++(*total);
+		if (list)
+			printf("%03d -", *total);
 		for (i = 0; i < ntasks; i++) {
 			tasks[i].computation = tasks[i].wcec /
 							frequencies[ind[i]];
 		}
 
 		compute_sample_analysis(ntasks, tasks, nresources, verbose);
-		*success += evaluate_sample_response(ntasks, tasks);
+		*success += evaluate_sample_response(ntasks, tasks, list);
 
 		i = ntasks - 1;
 		while (++ind[i] >= limits[i]) {
