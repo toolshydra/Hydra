@@ -13,8 +13,30 @@
 #include <errno.h>
 #include <string.h>
 #include <math.h>
+#include <getopt.h>
 
 #include <analysis.h>
+
+static const char *short_options = "hvsi";
+static const struct option long_options[] = {
+	{ "help",     0, NULL, 'h' },
+	{ "verbose",  0, NULL, 'v' },
+	{ "summary",  0, NULL, 's' },
+	{ "initial-drop",  0, NULL, 'i' },
+	{ NULL,       0, NULL, 0   },   /* Required at end of array.  */
+};
+
+static void print_usage(char* program_name)
+{
+	printf("Usage:  %s options\n", program_name);
+	printf(
+           "  -h  --help             Display this usage information.\n"
+           "  -v  --verbose          Print verbose messages.\n"
+           "  -s  --summary          Print overall total numbers.\n"
+           "  -i  --initial-drop     Removes combinations by limiting too "
+							"low frequencies.\n"
+           "  -l  --list-samples     List each sample summary analysis.\n");
+}
 
 /*
  * read_array: Reads an array of floats which may represent a sequence of
@@ -23,7 +45,7 @@
  * @parameter a: array of floats, which will be filled with read values
  * @complexity: O(n)
  */
-int read_array(int n, float **a)
+static int read_array(int n, float **a)
 {
 	int j = 0;
 	float *c;
@@ -55,7 +77,7 @@ int read_array(int n, float **a)
  * @parameter nresources: integer which represents the number of resources
  * @complexity: O(nfrequencies) + O(ntasks x nresources)
  */
-int read_task_model(int ntasks, struct task **tasks, int nfrequencies,
+static int read_task_model(int ntasks, struct task **tasks, int nfrequencies,
 			float **frequencies, int nresources)
 {
 	int i = 0;
@@ -104,15 +126,39 @@ int main(int argc, char *argv[])
 	float *frequencies;
 	int *resource_priorities;
 	struct task *tasks;
-	int verbose = 0;
 	int success;
 	int total;
 	int *limits;
+	int next_option;
+	int verbose = 0;
+	int summary = 0;
+	int drop = 0;
 	int err = 0;
 
 	/* Read command line options */
-	if (argc > 1)
-		verbose = strcmp(argv[1], "-v") == 0;
+	do {
+		next_option = getopt_long (argc, argv, short_options,
+						long_options, NULL);
+		switch (next_option) {
+		default:    /* Something else: unexpected.  */
+		case '?':   /* The user specified an invalid option.  */
+			err = -EINVAL;
+		case 'h':   /* -h or --help */
+			print_usage(argv[0]);
+			goto exit;
+		case 'v':   /* -v or --verbose */
+			verbose = 1;
+			break;
+		case 's':   /* -s or --summary */
+			summary = 1;
+			break;
+		case 'i':   /* -i or --initial-drop */
+			drop = 1;
+			break;
+		case -1:    /* Done with options.  */
+			break;
+		}
+	} while (next_option != -1);
 
 	/* Read input data */
 	scanf("%d %d %d", &ntasks, &nfrequencies, &nresources);
@@ -128,12 +174,11 @@ int main(int argc, char *argv[])
 	/* Compute output data */
 	time(&s);
 	err = compute_initial_limits(ntasks, tasks, nfrequencies, frequencies,
-								&limits);
+							drop, &limits);
 	if (err < 0) {
 		printf("Error while computing initial limits\n");
 		goto exit;
 	}
-
 
 	err = enumerate_samples(ntasks, tasks, nfrequencies, frequencies,
 				nresources, resource_priorities, limits,
@@ -145,11 +190,14 @@ int main(int argc, char *argv[])
 
 	time(&e);
 
-	printf("Summary\n");
-	printf("Number of Samples: %6.0f\n", pow(nfrequencies, ntasks));
-	printf("Number of Evaluated Samples: %6d\n", total);
-	printf("Number of Feasible Samples: %d\n", success);
-	printf("Time of processing: %.2fs\n", difftime(e, s));
+	if (summary) {
+		printf("Summary\n");
+		printf("Number of Samples: %6.0f\n",
+					pow(nfrequencies, ntasks));
+		printf("Number of Evaluated Samples: %6d\n", total);
+		printf("Number of Feasible Samples: %d\n", success);
+		printf("Time of processing: %.2fs\n", difftime(e, s));
+	}
 
 exit:
 	return err;

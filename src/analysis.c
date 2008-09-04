@@ -168,23 +168,30 @@ int evaluate_sample_response(int ntasks, struct task *tasks)
  * @parameter ntasks: number of tasks
  * @parameter tasks: array of tasks
  * @parameter nfrequencies: integer which represents the number of frequencies
+ * @parameter nfrequencies: represents if initial drop will be done
  * @parameter start_limits: array of integer which will be filled with limits
  * @complexity: O(ntasks x nfrequencies)
  */
 int compute_initial_limits(int ntasks, struct task *tasks, int nfrequencies,
-				float *frequencies, int **start_limits)
+				float *frequencies, int drop,
+				int **start_limits)
 {
 	int i, j;
 	int *limits;
+	int err = 0;
 
 	limits = malloc(ntasks * sizeof(int));
 	if (!limits) {
 		printf("Could not allocate memory for indices.\n");
-		return -ENOMEM;
+		err = -ENOMEM;
+		goto exit;
 	}
 
 	for (i = 0 ; i < ntasks; i++)
 		limits[i] = nfrequencies;
+
+	if (!drop)
+		goto exit;
 
 	for (i = nfrequencies - 1; i >= 0 ; i--) {
 		for (j = 0; j < ntasks; j++) {
@@ -194,9 +201,9 @@ int compute_initial_limits(int ntasks, struct task *tasks, int nfrequencies,
 		}
 	}
 
+exit:
 	*start_limits = limits;
-
-	return 0;
+	return err;
 }
 
 /*

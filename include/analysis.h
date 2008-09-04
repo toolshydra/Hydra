@@ -33,7 +33,8 @@ void print_task_influencies(int ntasks, struct task *tasks);
 void print_task_analysis(int ntasks, struct task *tasks);
 int evaluate_sample_response(int ntasks, struct task *tasks);
 int compute_initial_limits(int ntasks, struct task *tasks, int nfrequencies,
-				float *frequencies, int **start_limits);
+				float *frequencies, int drop,
+				int **start_limits);
 void compute_resource_priorities(int ntasks, struct task *tasks,
 					int nresources, int **priorities);
 void compute_exclusion_influency(int ntasks, struct task *tasks,
