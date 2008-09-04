@@ -357,11 +357,11 @@ int enumerate_samples(int ntasks, struct task *tasks, int nfrequencies,
 	}
 	memset(ind, ntasks, 0);
 
-	*total = 1;
+	*total = 0;
 	*success = 0;
 	while (ind[0] < limits[0]) {
 
-		printf("%03d -", (*total)++);
+		printf("%03d -", ++(*total));
 		for (i = 0; i < ntasks; i++) {
 			tasks[i].computation = tasks[i].wcec /
 							frequencies[ind[i]];
