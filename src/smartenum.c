@@ -106,83 +106,51 @@ int main(int argc, char *argv[])
 	struct task *tasks;
 	int verbose = 0;
 	int success;
-
-	int i, j;
+	int total;
 	int *limits;
-	int *ind;
+	int err = 0;
 
-	time(&s);
-
+	/* Read command line options */
 	if (argc > 1)
 		verbose = strcmp(argv[1], "-v") == 0;
 
-	if (verbose) {
-		printf("*-------------------------------------------------*\n");
-		printf("*Scalability Test and Initial Frequency Calculator*\n");
-		printf("*-------------------------------------------------*\n");
-	}
-
+	/* Read input data */
 	scanf("%d %d %d", &ntasks, &nfrequencies, &nresources);
 
 	/* O(nfrequencies) + O(ntasks x nresources) */
-	if (read_task_model(ntasks, &tasks, nfrequencies, &frequencies,
-							nresources) < 0) {
+	err = read_task_model(ntasks, &tasks, nfrequencies, &frequencies,
+							nresources);
+	if (err < 0) {
 		printf("Error while reading task model\n");
-		return -EINVAL;
+		goto exit;
+	}
+
+	/* Compute output data */
+	time(&s);
+	err = compute_initial_limits(ntasks, tasks, nfrequencies, frequencies,
+								&limits);
+	if (err < 0) {
+		printf("Error while computing initial limits\n");
+		goto exit;
 	}
 
 
-	ind = malloc(ntasks * sizeof(int));
-	if (!ind) {
-		printf("Could not allocate memory for indices.\n");
-		return -ENOMEM;
-	}
-	memset(ind, ntasks, 0);
-
-	limits = malloc(ntasks * sizeof(int));
-	if (!limits) {
-		printf("Could not allocate memory for indices.\n");
-		return -ENOMEM;
-	}
-	for (i = 0 ; i < ntasks; i++)
-		limits[i] = nfrequencies;
-
-	for (i = nfrequencies - 1; i >= 0 ; i--) {
-		for (j = 0; j < ntasks; j++) {
-			tasks[j].computation = tasks[j].wcec / frequencies[i];
-			if (tasks[j].computation > tasks[j].deadline)
-				limits[j] = i;
-		}
-	}
-
-	j = 1;
-	success = 0;
-	while (ind[0] < limits[0]) {
-
-		printf("%03d -", j++);
-		for (i = 0; i < ntasks; i++) {
-			tasks[i].computation = tasks[i].wcec /
-							frequencies[ind[i]];
-		}
-
-		compute_sample_analysis(ntasks, tasks, nresources, verbose);
-		success += evaluate_sample_response(ntasks, tasks);
-
-		i = ntasks - 1;
-		while (++ind[i] >= limits[i]) {
-			if (ind[0] == limits[0])
-				break;
-			ind[i] = 0;
-			i--;
-		}
+	err = enumerate_samples(ntasks, tasks, nfrequencies, frequencies,
+				nresources, resource_priorities, limits,
+				verbose, &success, &total);
+	if (err < 0) {
+		printf("Error while enumerating samples\n");
+		goto exit;
 	}
 
 	time(&e);
+
 	printf("Summary\n");
 	printf("Number of Samples: %6.0f\n", pow(nfrequencies, ntasks));
-	printf("Number of Evaluated Samples: %6d\n", j - 1);
+	printf("Number of Evaluated Samples: %6d\n", total);
 	printf("Number of Feasible Samples: %d\n", success);
 	printf("Time of processing: %.2fs\n", difftime(e, s));
 
-	return 0;
+exit:
+	return err;
 }

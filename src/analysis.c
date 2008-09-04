@@ -164,6 +164,42 @@ int evaluate_sample_response(int ntasks, struct task *tasks)
 }
 
 /*
+ * compute_initial_limits: Compute limits of start point
+ * @parameter ntasks: number of tasks
+ * @parameter tasks: array of tasks
+ * @parameter nfrequencies: integer which represents the number of frequencies
+ * @parameter start_limits: array of integer which will be filled with limits
+ * @complexity: O(ntasks x nfrequencies)
+ */
+int compute_initial_limits(int ntasks, struct task *tasks, int nfrequencies,
+				float *frequencies, int **start_limits)
+{
+	int i, j;
+	int *limits;
+
+	limits = malloc(ntasks * sizeof(int));
+	if (!limits) {
+		printf("Could not allocate memory for indices.\n");
+		return -ENOMEM;
+	}
+
+	for (i = 0 ; i < ntasks; i++)
+		limits[i] = nfrequencies;
+
+	for (i = nfrequencies - 1; i >= 0 ; i--) {
+		for (j = 0; j < ntasks; j++) {
+			tasks[j].computation = tasks[j].wcec / frequencies[i];
+			if (tasks[j].computation > tasks[j].deadline)
+				limits[j] = i;
+		}
+	}
+
+	*start_limits = limits;
+
+	return 0;
+}
+
+/*
  * compute_resource_priorities: Compute resource priorities
  * @parameter ntasks: number of tasks
  * @parameter tasks: array of tasks
@@ -284,3 +320,60 @@ void compute_sample_analysis(int ntasks, struct task *tasks,
 		print_task_analysis(ntasks, tasks);
 	}
 }
+
+/*
+ * compute_sample_analysis: compute influency for each task
+ * @parameter ntasks: number of tasks
+ * @parameter tasks: array of tasks
+ * @parameter nfrequencies: integer which represents the number of frequencies
+ * @parameter frequencies: array of float with available frequencies
+ * @parameter nresources: integer which represents the number of resources
+ * @parameter resource_priorities: array of integer with resource priorities
+ * @parameter limits: array of integer with initial frequency limits
+ * @parameter verbose: determines if output will be verbose
+ * @parameter success: output parameter with number of feasible samples
+ * @parameter total: output parameter with total evaluated samples
+ * @complexity: O(nfrequencies ^ ntasks) x O(nresources x ntasks ^ 2)
+ */
+int enumerate_samples(int ntasks, struct task *tasks, int nfrequencies,
+			float *frequencies, int nresources,
+			int *resource_priorities, int *limits, int verbose,
+			int *success, int *total)
+{
+	int i;
+	int *ind;
+
+	ind = malloc(ntasks * sizeof(int));
+	if (!ind) {
+		printf("Could not allocate memory for indices.\n");
+		return -ENOMEM;
+	}
+	memset(ind, ntasks, 0);
+
+	*total = 1;
+	*success = 0;
+	while (ind[0] < limits[0]) {
+
+		printf("%03d -", (*total)++);
+		for (i = 0; i < ntasks; i++) {
+			tasks[i].computation = tasks[i].wcec /
+							frequencies[ind[i]];
+		}
+
+		compute_sample_analysis(ntasks, tasks, nresources, verbose);
+		*success += evaluate_sample_response(ntasks, tasks);
+
+		i = ntasks - 1;
+		while (++ind[i] >= limits[i]) {
+			if (ind[0] == limits[0])
+				break;
+			ind[i] = 0;
+			i--;
+		}
+	}
+
+	return 0;
+
+}
+
+
