@@ -27,16 +27,17 @@ static const struct option long_options[] = {
 	{ NULL,       0, NULL, 0   },   /* Required at end of array.  */
 };
 
-static void print_usage(char* program_name)
+static void print_usage(char *program_name)
 {
 	printf("Usage:  %s options\n", program_name);
 	printf(
-           "  -h  --help             Display this usage information.\n"
-           "  -v  --verbose          Print verbose messages.\n"
-           "  -s  --summary          Print overall total numbers.\n"
-           "  -i  --initial-drop     Removes combinations by limiting too "
+		"  -h  --help             Display this usage information.\n"
+		"  -v  --verbose          Print verbose messages.\n"
+		"  -s  --summary          Print overall total numbers.\n"
+		"  -i  --initial-drop     Removes combinations by limiting too "
 							"low frequencies.\n"
-           "  -l  --list-samples     List each sample summary analysis.\n");
+		"  -l  --list-samples     List each sample summary"
+							" analysis.\n");
 }
 
 /*
