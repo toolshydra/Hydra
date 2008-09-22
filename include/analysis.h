@@ -45,5 +45,5 @@ void compute_sample_analysis(int ntasks, struct task *tasks,
 int enumerate_samples(int ntasks, struct task *tasks, int nfrequencies,
 			float *frequencies, int nresources,
 			int *resource_priorities, int *limits, int verbose,
-			int list, int *success, int *total);
+			int list, int jump, int *success, int *total);
 #endif

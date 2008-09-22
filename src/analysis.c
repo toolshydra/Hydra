@@ -334,6 +334,26 @@ void compute_sample_analysis(int ntasks, struct task *tasks,
 }
 
 /*
+ * propagate: propagate index update
+ * @parameter last: index to start to update
+ * @parameter ind: array of indexes
+ * @parameter limits: array of index limits
+ */
+static int propagate(int last, int *ind, int *limits)
+{
+	int i;
+
+	i = last;
+	while (++ind[i] >= limits[i]) {
+		if (ind[0] == limits[0])
+			break;
+		ind[i] = 0;
+		i--;
+	}
+	return i;
+}
+
+/*
  * compute_sample_analysis: compute influency for each task
  * @parameter ntasks: number of tasks
  * @parameter tasks: array of tasks
@@ -351,9 +371,11 @@ void compute_sample_analysis(int ntasks, struct task *tasks,
 int enumerate_samples(int ntasks, struct task *tasks, int nfrequencies,
 			float *frequencies, int nresources,
 			int *resource_priorities, int *limits, int verbose,
-			int list, int *success, int *total)
+			int list, int jump, int *success, int *total)
 {
-	int i;
+
+	int i, last;
+	int pass;
 	int *ind;
 
 	ind = malloc(ntasks * sizeof(int));
@@ -365,6 +387,7 @@ int enumerate_samples(int ntasks, struct task *tasks, int nfrequencies,
 
 	*total = 0;
 	*success = 0;
+	last = 0;
 	while (ind[0] < limits[0]) {
 		++(*total);
 		if (list)
@@ -375,15 +398,21 @@ int enumerate_samples(int ntasks, struct task *tasks, int nfrequencies,
 		}
 
 		compute_sample_analysis(ntasks, tasks, nresources, verbose);
-		*success += evaluate_sample_response(ntasks, tasks, list);
+		pass = evaluate_sample_response(ntasks, tasks, list);
+		*success += pass;
+		if (jump && !pass) {
+			/* as we found the last, we can re-start it */
+			ind[last] = 0;
 
-		i = ntasks - 1;
-		while (++ind[i] >= limits[i]) {
-			if (ind[0] == limits[0])
+			last--;
+			/* check if we reached the end */
+			if (last < 0)
 				break;
-			ind[i] = 0;
-			i--;
+			/* we then go to the next level */
+			last = propagate(last, ind, limits);
+			continue;
 		}
+		last = propagate(ntasks - 1, ind, limits);
 	}
 
 	return 0;

@@ -17,13 +17,14 @@
 
 #include <analysis.h>
 
-static const char *short_options = "hvsil";
+static const char *short_options = "hvsilj";
 static const struct option long_options[] = {
 	{ "help",     0, NULL, 'h' },
 	{ "verbose",  0, NULL, 'v' },
 	{ "summary",  0, NULL, 's' },
 	{ "initial-drop",  0, NULL, 'i' },
 	{ "list-samples",  0, NULL, 'l' },
+	{ "jump-useless",  0, NULL, 'j' },
 	{ NULL,       0, NULL, 0   },   /* Required at end of array.  */
 };
 
@@ -37,7 +38,8 @@ static void print_usage(char *program_name)
 		"  -i  --initial-drop     Removes combinations by limiting too "
 							"low frequencies.\n"
 		"  -l  --list-samples     List each sample summary"
-							" analysis.\n");
+							" analysis.\n"
+		"  -j  --jump-useless     Jump useless detected samples.\n");
 }
 
 /*
@@ -136,6 +138,7 @@ int main(int argc, char *argv[])
 	int summary = 0;
 	int drop = 0;
 	int list_samples = 0;
+	int jump_useless = 0;
 	int err = 0;
 
 	/* Read command line options */
@@ -160,6 +163,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'l':   /* -l or --list-samples */
 			list_samples = 1;
+			break;
+		case 'j':   /* -j or --jump-useless */
+			jump_useless = 1;
 			break;
 		case -1:    /* Done with options.  */
 			break;
@@ -188,7 +194,8 @@ int main(int argc, char *argv[])
 
 	err = enumerate_samples(ntasks, tasks, nfrequencies, frequencies,
 				nresources, resource_priorities, limits,
-				verbose, list_samples, &success, &total);
+				verbose, list_samples, jump_useless, &success,
+				&total);
 	if (err < 0) {
 		printf("Error while enumerating samples\n");
 		goto exit;
