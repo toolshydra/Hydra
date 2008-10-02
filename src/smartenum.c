@@ -8,6 +8,7 @@
  * published by the Free Software Foundation.
  */
 
+#include <sys/time.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -125,7 +126,7 @@ static int read_task_model(int ntasks, struct task **tasks, int nfrequencies,
  */
 int main(int argc, char *argv[])
 {
-	time_t s, e;
+	struct timeval s, e;
 	int ntasks;
 	int nresources;
 	int nfrequencies;
@@ -192,7 +193,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Compute output data */
-	time(&s);
+	gettimeofday(&s, NULL);
 	err = compute_initial_limits(ntasks, tasks, nfrequencies, frequencies,
 							drop, &limits);
 	if (err < 0) {
@@ -210,18 +211,24 @@ int main(int argc, char *argv[])
 		goto exit;
 	}
 
-	time(&e);
+	gettimeofday(&e, NULL);
 
 	if (summary) {
 		int i;
+		struct timeval diff;
+
 		printf("Summary\n");
 		printf("Number of Samples: %6.0f\n",
 					pow(nfrequencies, ntasks));
 		printf("Number of Evaluated Samples: %6d\n", total);
 		printf("Number of Feasible Samples: %d\n", success);
-		printf("Time of processing: %.2fs\n", difftime(e, s));
+
+		timersub(&e, &s, &diff);
+		printf("Time of processing: %lds and %ld us\n", diff.tv_sec,
+							diff.tv_usec);
 		if (best < HUGE_VAL) {
-			printf("Best spread %.2f with following frequencies\n", best);
+			printf("Best spread %.2f with following frequencies\n",
+				best);
 			for (i = 0; i < ntasks; i++)
 				printf("%.2f ", frequencies[best_index[i]]);
 			printf("\n");

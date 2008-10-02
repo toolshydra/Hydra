@@ -389,7 +389,7 @@ static int start_drop(int ntasks, struct task *tasks, int nfrequencies,
 							frequencies[ind[i]];
 		}
 		if (list)
-			printf("%03d -", *total);
+			printf("%03d -", *total, m);
 
 		compute_sample_analysis(ntasks, tasks, nresources, verbose);
 		pass = evaluate_sample_response(ntasks, tasks, list, &spread);
