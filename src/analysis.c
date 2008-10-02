@@ -360,10 +360,62 @@ static int propagate(int last, int *ind, int *limits)
  * @parameter nfrequencies: integer which represents the number of frequencies
  * @parameter frequencies: array of float with available frequencies
  * @parameter nresources: integer which represents the number of resources
+ * @parameter verbose: determines if output will be verbose
+ * @parameter list: determines if output will list each sample summary
+ * @parameter success: output parameter with number of feasible samples
+ * @parameter total: output parameter with total evaluated samples
+ * @complexity: O(log(nfrequencies)) + O(ntask)
+ */
+static int start_drop(int ntasks, struct task *tasks, int nfrequencies,
+			float *frequencies, int nresources, int verbose,
+			int list, int *ind, int *success, int *total)
+{
+	int i, f, m, pass, last, start;
+
+	f = 0;
+	last = nfrequencies - 1;
+	while (f <= last) {
+		(*total)++;
+		m = (f + last) / 2;
+		for (i = 0; i < ntasks; i++) {
+			ind[i] = m;
+			tasks[i].computation = tasks[i].wcec /
+							frequencies[ind[i]];
+		}
+		if (list)
+			printf("%03d -", *total);
+
+		compute_sample_analysis(ntasks, tasks, nresources, verbose);
+		pass = evaluate_sample_response(ntasks, tasks, list);
+
+		*success += pass;
+
+		if (!pass) {
+			last = m - 1;
+		} else {
+			f = m + 1;
+			start = m;
+		}
+	}
+
+	for (i = 0; i < ntasks; i++)
+		ind[i] = start;
+
+	return 0;
+}
+
+/*
+ * compute_sample_analysis: compute influency for each task
+ * @parameter ntasks: number of tasks
+ * @parameter tasks: array of tasks
+ * @parameter nfrequencies: integer which represents the number of frequencies
+ * @parameter frequencies: array of float with available frequencies
+ * @parameter nresources: integer which represents the number of resources
  * @parameter resource_priorities: array of integer with resource priorities
  * @parameter limits: array of integer with initial frequency limits
  * @parameter verbose: determines if output will be verbose
  * @parameter list: determines if output will list each sample summary
+ * @parameter start: determines if initial samples will be dropped
  * @parameter success: output parameter with number of feasible samples
  * @parameter total: output parameter with total evaluated samples
  * @complexity: O(nfrequencies ^ ntasks) x O(nresources x ntasks ^ 2)
@@ -371,7 +423,8 @@ static int propagate(int last, int *ind, int *limits)
 int enumerate_samples(int ntasks, struct task *tasks, int nfrequencies,
 			float *frequencies, int nresources,
 			int *resource_priorities, int *limits, int verbose,
-			int list, int jump, int *success, int *total)
+			int list, int start, int jump, int *success,
+			int *total)
 {
 
 	int i, last;
@@ -388,6 +441,12 @@ int enumerate_samples(int ntasks, struct task *tasks, int nfrequencies,
 	*total = 0;
 	*success = 0;
 	last = 0;
+
+	if (start)
+		start_drop(ntasks, tasks, nfrequencies, frequencies,
+				nresources, verbose, list, ind,
+				success, total);
+
 	while (ind[0] < limits[0]) {
 		++(*total);
 		if (list)
@@ -416,6 +475,5 @@ int enumerate_samples(int ntasks, struct task *tasks, int nfrequencies,
 	}
 
 	return 0;
-
 }
 
