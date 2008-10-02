@@ -120,7 +120,8 @@ void print_task_analysis(int ntasks, struct task *tasks)
  * @parameter list: determines if the output will list each sample summary
  * @complexity: O(ntasks)
  */
-int evaluate_sample_response(int ntasks, struct task *tasks, int list)
+int evaluate_sample_response(int ntasks, struct task *tasks, int list,
+				float *spread)
 {
 	int i, ok;
 	char f[10];
@@ -163,6 +164,9 @@ int evaluate_sample_response(int ntasks, struct task *tasks, int list)
 			printf("]\t%-4s %7.2f", "NOT", -1.0);
 		printf("\n");
 	}
+
+	if (ok)
+		*spread = s;
 
 	return ok;
 }
@@ -368,9 +372,11 @@ static int propagate(int last, int *ind, int *limits)
  */
 static int start_drop(int ntasks, struct task *tasks, int nfrequencies,
 			float *frequencies, int nresources, int verbose,
-			int list, int *ind, int *success, int *total)
+			int list, int *ind, int *success, int *total,
+			float *best)
 {
 	int i, f, m, pass, last, start;
+	float spread;
 
 	f = 0;
 	last = nfrequencies - 1;
@@ -386,7 +392,7 @@ static int start_drop(int ntasks, struct task *tasks, int nfrequencies,
 			printf("%03d -", *total);
 
 		compute_sample_analysis(ntasks, tasks, nresources, verbose);
-		pass = evaluate_sample_response(ntasks, tasks, list);
+		pass = evaluate_sample_response(ntasks, tasks, list, &spread);
 
 		*success += pass;
 
@@ -395,6 +401,8 @@ static int start_drop(int ntasks, struct task *tasks, int nfrequencies,
 		} else {
 			f = m + 1;
 			start = m;
+			if (spread < *best)
+				*best = spread;
 		}
 	}
 
@@ -424,12 +432,13 @@ int enumerate_samples(int ntasks, struct task *tasks, int nfrequencies,
 			float *frequencies, int nresources,
 			int *resource_priorities, int *limits, int verbose,
 			int list, int start, int jump, int *success,
-			int *total)
+			int *total, float *best, int **best_index)
 {
 
 	int i, last;
 	int pass;
 	int *ind;
+	float spread;
 
 	ind = malloc(ntasks * sizeof(int));
 	if (!ind) {
@@ -438,14 +447,28 @@ int enumerate_samples(int ntasks, struct task *tasks, int nfrequencies,
 	}
 	memset(ind, ntasks, 0);
 
+	*best_index = malloc(ntasks * sizeof(int));
+	if (!ind) {
+		printf("Could not allocate memory for indices.\n");
+		return -ENOMEM;
+	}
+	memset(*best_index, ntasks, 0);
+
+	ind = malloc(ntasks * sizeof(int));
+	if (!ind) {
+		printf("Could not allocate memory for indices.\n");
+		return -ENOMEM;
+	}
+
 	*total = 0;
 	*success = 0;
 	last = 0;
+	*best = HUGE_VAL;
 
 	if (start)
 		start_drop(ntasks, tasks, nfrequencies, frequencies,
 				nresources, verbose, list, ind,
-				success, total);
+				success, total, best);
 
 	while (ind[0] < limits[0]) {
 		++(*total);
@@ -457,8 +480,14 @@ int enumerate_samples(int ntasks, struct task *tasks, int nfrequencies,
 		}
 
 		compute_sample_analysis(ntasks, tasks, nresources, verbose);
-		pass = evaluate_sample_response(ntasks, tasks, list);
+		pass = evaluate_sample_response(ntasks, tasks, list, &spread);
 		*success += pass;
+
+		if (pass && spread < *best) {
+			*best = spread;
+			memcpy(*best_index, ind, ntasks);
+		}
+
 		if (jump && !pass) {
 			/* as we found the last, we can re-start it */
 			ind[last] = 0;

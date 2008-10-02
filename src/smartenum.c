@@ -143,6 +143,8 @@ int main(int argc, char *argv[])
 	int jump_useless = 0;
 	int start_drop = 0;
 	int err = 0;
+	int *best_index;
+	float best;
 
 	/* Read command line options */
 	do {
@@ -201,7 +203,8 @@ int main(int argc, char *argv[])
 	err = enumerate_samples(ntasks, tasks, nfrequencies, frequencies,
 				nresources, resource_priorities, limits,
 				verbose, list_samples, start_drop,
-				jump_useless, &success,	&total);
+				jump_useless, &success,	&total, &best,
+				&best_index);
 	if (err < 0) {
 		printf("Error while enumerating samples\n");
 		goto exit;
@@ -210,12 +213,19 @@ int main(int argc, char *argv[])
 	time(&e);
 
 	if (summary) {
+		int i;
 		printf("Summary\n");
 		printf("Number of Samples: %6.0f\n",
 					pow(nfrequencies, ntasks));
 		printf("Number of Evaluated Samples: %6d\n", total);
 		printf("Number of Feasible Samples: %d\n", success);
 		printf("Time of processing: %.2fs\n", difftime(e, s));
+		if (best < HUGE_VAL) {
+			printf("Best spread %.2f with following frequencies\n", best);
+			for (i = 0; i < ntasks; i++)
+				printf("%.2f ", frequencies[best_index[i]]);
+			printf("\n");
+		}
 	}
 
 exit:
