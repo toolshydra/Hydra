@@ -227,11 +227,22 @@ int main(int argc, char *argv[])
 		printf("Time of processing: %lds and %ld us\n", diff.tv_sec,
 							diff.tv_usec);
 		if (best < HUGE_VAL) {
+			float sys_utilization = 0;
 			printf("Best spread %.2f with following frequencies\n",
 				best);
-			for (i = 0; i < ntasks; i++)
+			for (i = 0; i < ntasks; i++) {
+				float frequency;
+				float utilization;
+
+				frequency = frequencies[best_index[i]];
 				printf("%.2f ", frequencies[best_index[i]]);
-			printf("\n");
+				utilization = (tasks[i].wcec / frequency);
+				utilization /= tasks[i].deadline;
+
+				sys_utilization += utilization;
+			}
+			printf("\nTotal System Utilization is %6.2f%\n",
+					sys_utilization * 100);
 		}
 	}
 
