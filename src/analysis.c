@@ -53,7 +53,7 @@ void print_task_model(int ntasks, struct task *tasks,
 		printf("T%d\t", i + 1);
 
 		for (j = 0; j < nresources; j++)
-			printf("%.2f\%\t", tasks[i].resources[j] * 100);
+			printf("%.2f%%\t", tasks[i].resources[j] * 100);
 		printf("\n");
 
 	}
