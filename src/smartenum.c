@@ -27,6 +27,7 @@ static const struct option long_options[] = {
 	{ "list-samples",  0, NULL, 'l' },
 	{ "jump-useless",  0, NULL, 'j' },
 	{ "start-drop",  0, NULL, 'k' },
+	{ "heuristic",  required_argument, NULL, 1 },
 	{ NULL,       0, NULL, 0   },   /* Required at end of array.  */
 };
 
@@ -42,7 +43,9 @@ static void print_usage(char *program_name)
 		"  -l  --list-samples     List each sample summary"
 							" analysis.\n"
 		"  -j  --jump-useless     Jump useless detected samples.\n"
-		"  -k  --start-drop       Drop initial useless samples.\n");
+		"  -k  --start-drop       Drop initial useless samples.\n"
+		"      --heuristic=       Specify an heuristic to use.\n"
+		"                         Available heuristics: usage_first\n");
 }
 
 /*
@@ -143,6 +146,7 @@ int main(int argc, char *argv[])
 	int list_samples = 0;
 	int jump_useless = 0;
 	int start_drop = 0;
+	int heuristic = 0;
 	int err = 0;
 	int *best_index;
 	float best;
@@ -175,6 +179,18 @@ int main(int argc, char *argv[])
 			break;
 		case 'k':   /* -s or --start-drop */
 			start_drop = 1;
+			break;
+		case 1:   /* -e or --heuristic */
+			if (!optarg) {
+				printf("Specify an heuristic.\n");
+				return -EINVAL;
+			}
+			if (!strcmp(optarg, "usage_first"))
+				heuristic = 1;
+			if (!heuristic) {
+				printf("Available heuristics: usage_first\n");
+				return -EINVAL;
+			}
 			break;
 		case -1:    /* Done with options.  */
 			break;
