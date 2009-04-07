@@ -125,12 +125,46 @@ static int read_task_model(struct task_set *tset, struct freq_set *freqs,
 	return 0;
 }
 
+void print_summary(struct task_set tset, struct freq_set freqs,
+			struct results stat)
+{
+	int i;
+	struct timeval diff;
+
+	printf("Summary\n");
+	printf("Number of Samples: %6.0f\n",
+				pow(freqs.nfrequencies, tset.ntasks));
+	printf("Number of Evaluated Samples: %6d\n", stat.total);
+	printf("Number of Feasible Samples: %d\n", stat.success);
+
+	timersub(&stat.e, &stat.s, &diff);
+	printf("Time of processing: %lds and %ld us\n", diff.tv_sec,
+						diff.tv_usec);
+	if (stat.best < HUGE_VAL) {
+		float sys_utilization = 0;
+		printf("Best spread %.2f with following frequencies\n",
+			stat.best);
+		for (i = 0; i < tset.ntasks; i++) {
+			float frequency;
+			float utilization;
+
+			frequency = freqs.frequencies[stat.best_index[i]];
+			printf("%.2f ", freqs.frequencies[stat.best_index[i]]);
+			utilization = (tset.tasks[i].wcec / frequency);
+			utilization /= tset.tasks[i].deadline;
+
+			sys_utilization += utilization;
+		}
+		printf("\nTotal System Utilization is %6.2f%\n",
+			sys_utilization * 100);
+	}
+}
+
 /*
  * @complexity: O(nfrequencies ^ ntasks) x O(nresources x ntasks ^ 2)
  */
 int main(int argc, char *argv[])
 {
-	struct timeval s, e;
 	struct task_set tset;
 	struct res_set res;
 	struct freq_set freqs;
@@ -200,7 +234,7 @@ int main(int argc, char *argv[])
 	}
 
 	/* Compute output data */
-	gettimeofday(&s, NULL);
+	gettimeofday(&stat.s, NULL);
 	err = compute_initial_limits(tset, freqs, runtime, &limits);
 	if (err < 0) {
 		printf("Error while computing initial limits\n");
@@ -213,42 +247,10 @@ int main(int argc, char *argv[])
 		goto exit;
 	}
 
-	gettimeofday(&e, NULL);
+	gettimeofday(&stat.e, NULL);
 
-	if (runtime.summary) {
-		int i;
-		struct timeval diff;
-
-		printf("Summary\n");
-		printf("Number of Samples: %6.0f\n",
-					pow(freqs.nfrequencies, tset.ntasks));
-		printf("Number of Evaluated Samples: %6d\n", stat.total);
-		printf("Number of Feasible Samples: %d\n", stat.success);
-
-		timersub(&e, &s, &diff);
-		printf("Time of processing: %lds and %ld us\n", diff.tv_sec,
-							diff.tv_usec);
-		if (stat.best < HUGE_VAL) {
-			float sys_utilization = 0;
-			printf("Best spread %.2f with following frequencies\n",
-				stat.best);
-			for (i = 0; i < tset.ntasks; i++) {
-				float frequency;
-				float utilization;
-
-				frequency =
-					freqs.frequencies[stat.best_index[i]];
-				printf("%.2f ",
-					freqs.frequencies[stat.best_index[i]]);
-				utilization = (tset.tasks[i].wcec / frequency);
-				utilization /= tset.tasks[i].deadline;
-
-				sys_utilization += utilization;
-			}
-			printf("\nTotal System Utilization is %6.2f%\n",
-					sys_utilization * 100);
-		}
-	}
+	if (runtime.summary)
+		print_summary(tset, freqs, stat);
 
 exit:
 	return err;

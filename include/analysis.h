@@ -57,6 +57,8 @@ struct run_info {
 
 /* Results */
 struct results {
+	struct timeval s;
+	struct timeval e;
 	int success;
 	int total;
 	float best;
