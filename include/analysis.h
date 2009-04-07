@@ -12,6 +12,8 @@
 #define ANALYSIS_H
 
 #define N_TRIES	5
+
+/* Task data */
 struct task {
 	float deadline;
 	float wcec;
@@ -25,27 +27,54 @@ struct task {
 #define	task_res_use(t, i)		(t.resources[i] * t.computation)
 #define precedence_influency(t, w)	(ceil((w + t.Ij) / t.deadline) * \
 							t.computation)
-#define response(t)		(t.Ip + t.Ij)
+#define response(t)			(t.Ip + t.Ij)
 
-void print_task_model(int ntasks, struct task *tasks,
-			int nresources, int *resource_priorities);
-void print_task_influencies(int ntasks, struct task *tasks);
-void print_task_analysis(int ntasks, struct task *tasks);
-int evaluate_sample_response(int ntasks, struct task *tasks, int list,
+/* Sets */
+struct task_set {
+	int ntasks;
+	struct task *tasks;
+};
+
+struct freq_set {
+	int nfrequencies;
+	float *frequencies;
+};
+
+struct res_set {
+	int nresources;
+	int *resource_priorities;
+};
+
+/* Runtime data */
+struct run_info {
+	int summary:1;			/* print a summary in the end */
+	int verbose:1;			/* verbose execution */
+	int list:1;			/* list samples */
+	int best_start:1;		/* comput best start point */
+	int jump_samples:1;		/* jump useless samples */
+	int best_initial_limits:1;	/* compute best initial freq limits */
+};
+
+/* Results */
+struct results {
+	int success;
+	int total;
+	float best;
+	int *best_index;
+};
+
+void print_task_model(struct task_set tset, struct res_set res);
+void print_task_influencies(struct task_set tset);
+void print_task_analysis(struct task_set tset);
+int evaluate_sample_response(struct task_set tset, struct run_info runtime,
 				float *spread);
-int compute_initial_limits(int ntasks, struct task *tasks, int nfrequencies,
-				float *frequencies, int drop,
-				int **start_limits);
-void compute_resource_priorities(int ntasks, struct task *tasks,
-					int nresources, int **priorities);
-void compute_exclusion_influency(int ntasks, struct task *tasks,
-					int nresources, int *priorities);
-void compute_precedence_influency(int ntasks, struct task *tasks);
-void compute_sample_analysis(int ntasks, struct task *tasks,
-				int nresources, int verbose);
-int enumerate_samples(int ntasks, struct task *tasks, int nfrequencies,
-			float *frequencies, int nresources,
-			int *resource_priorities, int *limits, int verbose,
-			int list, int start, int jump, int *success,
-			int *total, float *best, int **best_index);
+int compute_initial_limits(struct task_set tset, struct freq_set freqs,
+				struct run_info runtime, int **start_limits);
+void compute_exclusion_influency(struct task_set tset, struct res_set res);
+void compute_precedence_influency(struct task_set tset);
+void compute_sample_analysis(struct task_set tset, struct res_set res,
+				struct run_info runtime);
+int enumerate_samples(struct task_set tset, struct freq_set freqs,
+			struct res_set res, int *limits,
+			struct run_info runtime, struct results *stat);
 #endif

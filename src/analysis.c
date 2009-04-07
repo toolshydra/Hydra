@@ -18,59 +18,55 @@
 
 /*
  * print_task_model: prints task model info in a human readable way
- * @parameter ntasks: number of tasks
- * @parameter tasks: array of tasks
- * @parameter nresources: integer which represents the number of resources
- * @parameter resource_priorities: array of integer with resources priorities
+ * @parameter tset: set of tasks
+ * @parameter res: set of resources
  * @complexity: O(ntasks) + 2xO(nresources) + O(ntasks x nresources)
  */
-void print_task_model(int ntasks, struct task *tasks,
-			int nresources, int *resource_priorities)
+void print_task_model(struct task_set tset, struct res_set res)
 {
 	int i;
 
 	printf("\n**************\n");
 	printf("* Task Model *\n");
 	printf("**************\n");
-	printf("%02d tasks, %02d resources\n", ntasks, nresources);
+	printf("%02d tasks, %02d resources\n", tset.ntasks, res.nresources);
 	printf("Task\tPriority\tComputation\tDeadline\n");
 
-	for (i = 0; i < ntasks; i++)
+	for (i = 0; i < tset.ntasks; i++)
 		printf("T%d\t%d\t\t%.2f\t\t%.2f\n", i + 1, i,
-			tasks[i].computation, tasks[i].deadline);
+			tset.tasks[i].computation, tset.tasks[i].deadline);
 
 	printf("\n******************\n");
 	printf("* Resource Model *\n");
 	printf("******************\n");
 	printf("Task\t");
-	for (i = 0; i < nresources; i++)
+	for (i = 0; i < res.nresources; i++)
 		printf("R%d\t", i + 1);
 	printf("\n");
 
-	for (i = 0; i < ntasks; i++) {
+	for (i = 0; i < tset.ntasks; i++) {
 		int j;
 
 		printf("T%d\t", i + 1);
 
-		for (j = 0; j < nresources; j++)
-			printf("%.2f%%\t", tasks[i].resources[j] * 100);
+		for (j = 0; j < res.nresources; j++)
+			printf("%.2f%%\t", tset.tasks[i].resources[j] * 100);
 		printf("\n");
 
 	}
 	printf("Resource priorities\n");
-	for (i = 0; i < nresources; i++)
-		printf("C(R%d) = %d\t", i + 1, resource_priorities[i]);
+	for (i = 0; i < res.nresources; i++)
+		printf("C(R%d) = %d\t", i + 1, res.resource_priorities[i]);
 	printf("\n");
 
 }
 
 /*
  * print_task_influencies: prints each task influence component
- * @parameter ntasks: number of tasks
- * @parameter tasks: array of tasks
+ * @parameter tset: set of tasks
  * @complexity: O(ntasks)
  */
-void print_task_influencies(int ntasks, struct task *tasks)
+void print_task_influencies(struct task_set tset)
 {
 	int i;
 
@@ -78,20 +74,20 @@ void print_task_influencies(int ntasks, struct task *tasks)
 	printf("* Influency *\n");
 	printf("*************\n");
 	printf("Task\tIp\tIb\tIj\tI\n");
-	for (i = 0; i < ntasks; i++) {
-		float I = tasks[i].Ip + tasks[i].Ib + tasks[i].Ij;
-		printf("T%d\t%.2f\t%.2f\t%.2f\t%.2f\n", i + 1, tasks[i].Ip,
-			tasks[i].Ib, tasks[i].Ij, I);
+	for (i = 0; i < tset.ntasks; i++) {
+		float I = tset.tasks[i].Ip + tset.tasks[i].Ib +
+				tset.tasks[i].Ij;
+		printf("T%d\t%.2f\t%.2f\t%.2f\t%.2f\n", i + 1, tset.tasks[i].Ip,
+			tset.tasks[i].Ib, tset.tasks[i].Ij, I);
 	}
 }
 
 /*
  * print_task_analysis: prints each task computed data
- * @parameter ntasks: number of tasks
- * @parameter tasks: array of tasks
+ * @parameter tset: set of tasks
  * @complexity: O(ntasks)
  */
-void print_task_analysis(int ntasks, struct task *tasks)
+void print_task_analysis(struct task_set tset)
 {
 	int i;
 
@@ -101,26 +97,26 @@ void print_task_analysis(int ntasks, struct task *tasks)
 	printf("Task\tComputation\tI\t\tResponse\tDeadline\tK (D - I)"
 								"\tD - R\n");
 
-	for (i = 0; i < ntasks; i++)
+	for (i = 0; i < tset.ntasks; i++)
 		printf("T%d\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f\n",
-				i + 1,
-				tasks[i].computation,
-				0,
-				response(tasks[i]),
-				tasks[i].deadline,
-				0,
-				tasks[i].deadline - response(tasks[i]));
+			i + 1,
+			tset.tasks[i].computation,
+			0,
+			response(tset.tasks[i]),
+			tset.tasks[i].deadline,
+			0,
+			tset.tasks[i].deadline - response(tset.tasks[i]));
 
 }
 
 /*
  * evaluate_sample_response: evaluates the sample feasibility
- * @parameter ntasks: number of tasks
- * @parameter tasks: array of tasks
- * @parameter list: determines if the output will list each sample summary
+ * @parameter tset: set of tasks
+ * @parameter runtime: runtime information
+ * @parameter spread: how good the sample can spread the time for tasks
  * @complexity: O(ntasks)
  */
-int evaluate_sample_response(int ntasks, struct task *tasks, int list,
+int evaluate_sample_response(struct task_set tset, struct run_info runtime,
 				float *spread)
 {
 	int i, ok;
@@ -128,18 +124,18 @@ int evaluate_sample_response(int ntasks, struct task *tasks, int list,
 	char di, de;
 	float s = 0;
 
-	if (list) {
-		for (i = 0; i < ntasks; i++)
-			printf(" %6.2f", tasks[i].computation);
+	if (runtime.list) {
+		for (i = 0; i < tset.ntasks; i++)
+			printf(" %6.2f", tset.tasks[i].computation);
 
 		printf("\t[ ");
 	}
 
 	ok = 1;
-	for (i = 0; i < ntasks; i++) {
+	for (i = 0; i < tset.ntasks; i++) {
 		float dx;
-		if (tasks[i].deadline < response(tasks[i]) ||
-			(tasks[i].Ip < 0)) {
+		if (tset.tasks[i].deadline < response(tset.tasks[i]) ||
+			(tset.tasks[i].Ip < 0)) {
 			di = '<';
 			de = '>';
 			ok = 0;
@@ -147,17 +143,17 @@ int evaluate_sample_response(int ntasks, struct task *tasks, int list,
 		} else {
 			di = ' ';
 			de = ' ';
-			dx = tasks[i].deadline - response(tasks[i]);
+			dx = tset.tasks[i].deadline - response(tset.tasks[i]);
 		}
 
 		sprintf(f, "%7.2f", dx);
-		if (list)
+		if (runtime.list)
 			printf("%c%7s%c ", di, f, de);
 
 		s += dx;
 	}
 
-	if (list) {
+	if (runtime.list) {
 		if (ok)
 			printf("]\t%-4s %7.2f", "OK", s);
 		else
@@ -173,39 +169,37 @@ int evaluate_sample_response(int ntasks, struct task *tasks, int list,
 
 /*
  * compute_initial_limits: Compute limits of start point
- * @parameter ntasks: number of tasks
- * @parameter tasks: array of tasks
- * @parameter nfrequencies: integer which represents the number of frequencies
- * @parameter frequencies: array of float with available frequencies
- * @parameter drop: represents if initial drop will be done
+ * @parameter tset: set of tasks
+ * @parameter freqs: set of frequencies (available frequencies)
+ * @parameter runtime: runtime info
  * @parameter start_limits: array of integer which will be filled with limits
  * @complexity: O(ntasks x nfrequencies)
  */
-int compute_initial_limits(int ntasks, struct task *tasks, int nfrequencies,
-				float *frequencies, int drop,
-				int **start_limits)
+int compute_initial_limits(struct task_set tset, struct freq_set freqs,
+				struct run_info runtime, int **start_limits)
 {
 	int i, j;
 	int *limits;
 	int err = 0;
 
-	limits = malloc(ntasks * sizeof(int));
+	limits = malloc(tset.ntasks * sizeof(int));
 	if (!limits) {
 		printf("Could not allocate memory for indices.\n");
 		err = -ENOMEM;
 		goto exit;
 	}
 
-	for (i = 0 ; i < ntasks; i++)
-		limits[i] = nfrequencies;
+	for (i = 0 ; i < tset.ntasks; i++)
+		limits[i] = freqs.nfrequencies;
 
-	if (!drop)
+	if (!runtime.best_initial_limits)
 		goto exit;
 
-	for (i = nfrequencies - 1; i >= 0 ; i--) {
-		for (j = 0; j < ntasks; j++) {
-			tasks[j].computation = tasks[j].wcec / frequencies[i];
-			if (tasks[j].computation > tasks[j].deadline)
+	for (i = freqs.nfrequencies - 1; i >= 0 ; i--) {
+		for (j = 0; j < tset.ntasks; j++) {
+			tset.tasks[j].computation = tset.tasks[j].wcec /
+							freqs.frequencies[i];
+			if (tset.tasks[j].computation > tset.tasks[j].deadline)
 				limits[j] = i;
 		}
 	}
@@ -217,25 +211,23 @@ exit:
 
 /*
  * compute_resource_priorities: Compute resource priorities
- * @parameter ntasks: number of tasks
- * @parameter tasks: array of tasks
- * @parameter nresources: integer which represents the number of resources
- * @parameter priorities: array of integer which will be filled with priorities
+ * @parameter tset: a set of tasks
+ * @parameter res: array of integer which will be filled with priorities
  * @complexity: O(ntasks x nresources)
  */
-void compute_resource_priorities(int ntasks, struct task *tasks,
-					int nresources, int **priorities)
+static void compute_resource_priorities(struct task_set tset,
+						struct res_set *res)
 {
 	int *p;
 	int i, j;
 
-	*priorities = malloc(sizeof(int) * nresources);
-	p = *priorities;
-	memset(p, -1, nresources);
+	res->resource_priorities = malloc(sizeof(int) * res->nresources);
+	p = res->resource_priorities;
+	memset(p, -1, res->nresources);
 
-	for (i = 0; i < nresources; i++) {
-		for (j = 0; j < ntasks; j++) {
-			if (tasks[j].resources[i] > 0.0) {
+	for (i = 0; i < res->nresources; i++) {
+		for (j = 0; j < tset.ntasks; j++) {
+			if (tset.tasks[j].resources[i] > 0.0) {
 				p[i] = j;
 				break;
 			}
@@ -245,25 +237,24 @@ void compute_resource_priorities(int ntasks, struct task *tasks,
 
 /*
  * compute_exclusion_influency: Compute exclusion influency of each task
- * @parameter ntasks: number of tasks
- * @parameter tasks: array of tasks
- * @parameter nresources: integer which represents the number of resources
- * @parameter priorities: array of integer with resource priorities
+ * @parameter tset: set of tasks
+ * @parameter res: set of integer with resource priorities
  * @complexity: O(nresources x ntasks ^ 2)
  */
-void compute_exclusion_influency(int ntasks, struct task *tasks,
-					int nresources, int *priorities)
+void compute_exclusion_influency(struct task_set tset, struct res_set res)
 {
 	int i, j, k;
 
-	for (i = 0; i < ntasks; i++) {
-		tasks[i].Ib = 0;
-		for (k = i + 1; k < ntasks; k++) {
-			for (j = 0; j < nresources; j++) {
+	for (i = 0; i < tset.ntasks; i++) {
+		tset.tasks[i].Ib = 0;
+		for (k = i + 1; k < tset.ntasks; k++) {
+			for (j = 0; j < res.nresources; j++) {
 				/* If we have high priority */
-				if (priorities[j] <= i &&
-					task_res_use(tasks[k], j) > tasks[i].Ib)
-					tasks[i].Ib = task_res_use(tasks[k], j);
+				if (res.resource_priorities[j] <= i &&
+					task_res_use(tset.tasks[k], j) >
+					tset.tasks[i].Ib)
+					tset.tasks[i].Ib =
+					task_res_use(tset.tasks[k], j);
 			}
 		}
 	}
@@ -272,68 +263,62 @@ void compute_exclusion_influency(int ntasks, struct task *tasks,
 
 /*
  * compute_precedence_influency: Compute precedence influency of each task
- * @parameter ntasks: number of tasks
- * @parameter tasks: array of tasks
+ * @parameter tset: set of tasks
  * @complexity: O(ntasks ^ 2)
  */
-void compute_precedence_influency(int ntasks, struct task *tasks)
+void compute_precedence_influency(struct task_set tset)
 {
 	int i, j;
 	int success;
 	float Ip, Ipa;
 
-	for (i = 0; i < ntasks; i++) {
-		Ip = tasks[i].computation + tasks[i].Ib;
+	for (i = 0; i < tset.ntasks; i++) {
+		Ip = tset.tasks[i].computation + tset.tasks[i].Ib;
 		success = 0;
-		while (!success && Ip <= tasks[i].deadline) {
+		while (!success && Ip <= tset.tasks[i].deadline) {
 			Ipa = Ip;
-			Ip = tasks[i].computation + tasks[i].Ib;
+			Ip = tset.tasks[i].computation + tset.tasks[i].Ib;
 			for (j = i - 1; j >= 0; j--)
-				Ip += precedence_influency(tasks[j], Ipa);
+				Ip += precedence_influency(tset.tasks[j], Ipa);
 
 			if (Ip == Ipa)
 				success = 1;
 		}
 		if (success)
-			tasks[i].Ip = Ip;
+			tset.tasks[i].Ip = Ip;
 		else
-			tasks[i].Ip = -1;
+			tset.tasks[i].Ip = -1;
 	}
 }
 
 /*
  * compute_sample_analysis: compute influency for each task
- * @parameter ntasks: number of tasks
- * @parameter tasks: array of tasks
- * @parameter nresources: integer which represents the number of resources
- * @parameter verbose: determines if output will be verbose
+ * @parameter tset: set of tasks
+ * @parameter res: set of resources
+ * @parameter runtime: determines if output will be verbose
  * @complexity: O(nresources x ntasks ^ 2)
  */
-void compute_sample_analysis(int ntasks, struct task *tasks,
-				int nresources, int verbose)
+void compute_sample_analysis(struct task_set tset, struct res_set res,
+				struct run_info runtime)
 {
-	int *resource_priorities;
 
 	/* O(ntasks x nresources) */
-	compute_resource_priorities(ntasks, tasks, nresources,
-						&resource_priorities);
-	if (verbose)
+	compute_resource_priorities(tset, &res);
+	if (runtime.verbose)
 	/* O(ntasks) + 2xO(nresources) + O(ntasks x nresources) */
-		print_task_model(ntasks, tasks, nresources,
-						resource_priorities);
+		print_task_model(tset, res);
 
 	/* O(nresources x ntasks ^ 2) */
-	compute_exclusion_influency(ntasks, tasks, nresources,
-							resource_priorities);
+	compute_exclusion_influency(tset, res);
 	/* O(ntasks ^ 2) */
-	compute_precedence_influency(ntasks, tasks);
+	compute_precedence_influency(tset);
 
-	if (verbose) {
+	if (runtime.verbose) {
 		/* O(ntasks) */
-		print_task_influencies(ntasks, tasks);
+		print_task_influencies(tset);
 
 		/* O(ntasks) */
-		print_task_analysis(ntasks, tasks);
+		print_task_analysis(tset);
 	}
 }
 
@@ -359,54 +344,49 @@ static int propagate(int last, int *ind, int *limits)
 
 /*
  * compute_sample_analysis: compute influency for each task
- * @parameter ntasks: number of tasks
- * @parameter tasks: array of tasks
- * @parameter nfrequencies: integer which represents the number of frequencies
- * @parameter frequencies: array of float with available frequencies
- * @parameter nresources: integer which represents the number of resources
- * @parameter verbose: determines if output will be verbose
- * @parameter list: determines if output will list each sample summary
- * @parameter success: output parameter with number of feasible samples
- * @parameter total: output parameter with total evaluated samples
+ * @parameter tset: set of tasks
+ * @parameter freqs: set of float with available frequencies
+ * @parameter res: set of resources
+ * @parameter runtime: runtime info
+ * @parameter stat: computed stats results
  * @complexity: O(log(nfrequencies)) + O(ntask)
  */
-static int start_drop(int ntasks, struct task *tasks, int nfrequencies,
-			float *frequencies, int nresources, int verbose,
-			int list, int *ind, int *success, int *total,
-			float *best)
+static int start_drop(struct task_set tset, struct freq_set freqs,
+			struct res_set res, struct run_info runtime, int *ind,
+			struct results *stat)
 {
 	int i, f, m, pass, last, start;
 	float spread;
 
 	f = 0;
-	last = nfrequencies - 1;
+	last = freqs.nfrequencies - 1;
 	while (f <= last) {
-		(*total)++;
+		stat->total++;
 		m = (f + last) / 2;
-		for (i = 0; i < ntasks; i++) {
+		for (i = 0; i < tset.ntasks; i++) {
 			ind[i] = m;
-			tasks[i].computation = tasks[i].wcec /
-							frequencies[ind[i]];
+			tset.tasks[i].computation = tset.tasks[i].wcec /
+						freqs.frequencies[ind[i]];
 		}
-		if (list)
-			printf("%03d -", *total, m);
+		if (runtime.list)
+			printf("%03d -", stat->total, m);
 
-		compute_sample_analysis(ntasks, tasks, nresources, verbose);
-		pass = evaluate_sample_response(ntasks, tasks, list, &spread);
+		compute_sample_analysis(tset, res, runtime);
+		pass = evaluate_sample_response(tset, runtime, &spread);
 
-		*success += pass;
+		stat->success += pass;
 
 		if (!pass) {
 			last = m - 1;
 		} else {
 			f = m + 1;
 			start = m;
-			if (spread < *best)
-				*best = spread;
+			if (spread < stat->best)
+				stat->best = spread;
 		}
 	}
 
-	for (i = 0; i < ntasks; i++)
+	for (i = 0; i < tset.ntasks; i++)
 		ind[i] = start;
 
 	return 0;
@@ -414,25 +394,17 @@ static int start_drop(int ntasks, struct task *tasks, int nfrequencies,
 
 /*
  * compute_sample_analysis: compute influency for each task
- * @parameter ntasks: number of tasks
- * @parameter tasks: array of tasks
- * @parameter nfrequencies: integer which represents the number of frequencies
- * @parameter frequencies: array of float with available frequencies
- * @parameter nresources: integer which represents the number of resources
- * @parameter resource_priorities: array of integer with resource priorities
+ * @parameter tset: set of tasks
+ * @parameter freqs: set of frequencies
+ * @parameter res: set of resources
  * @parameter limits: array of integer with initial frequency limits
- * @parameter verbose: determines if output will be verbose
- * @parameter list: determines if output will list each sample summary
- * @parameter start: determines if initial samples will be dropped
- * @parameter success: output parameter with number of feasible samples
- * @parameter total: output parameter with total evaluated samples
+ * @parameter runtime: runtime info
+ * @parameter stat: struct to store statistic info
  * @complexity: O(nfrequencies ^ ntasks) x O(nresources x ntasks ^ 2)
  */
-int enumerate_samples(int ntasks, struct task *tasks, int nfrequencies,
-			float *frequencies, int nresources,
-			int *resource_priorities, int *limits, int verbose,
-			int list, int start, int jump, int *success,
-			int *total, float *best, int **best_index)
+int enumerate_samples(struct task_set tset, struct freq_set freqs,
+			struct res_set res, int *limits,
+			struct run_info runtime, struct results *stat)
 {
 
 	int i, last;
@@ -440,55 +412,53 @@ int enumerate_samples(int ntasks, struct task *tasks, int nfrequencies,
 	int *ind;
 	float spread;
 
-	ind = malloc(ntasks * sizeof(int));
+	ind = malloc(tset.ntasks * sizeof(int));
 	if (!ind) {
 		printf("Could not allocate memory for indices.\n");
 		return -ENOMEM;
 	}
-	memset(ind, ntasks, 0);
+	memset(ind, tset.ntasks, 0);
 
-	*best_index = malloc(ntasks * sizeof(int));
+	stat->best_index = malloc(tset.ntasks * sizeof(int));
 	if (!ind) {
 		printf("Could not allocate memory for indices.\n");
 		return -ENOMEM;
 	}
-	memset(*best_index, ntasks, 0);
+	memset(stat->best_index, tset.ntasks, 0);
 
-	ind = malloc(ntasks * sizeof(int));
+	ind = malloc(tset.ntasks * sizeof(int));
 	if (!ind) {
 		printf("Could not allocate memory for indices.\n");
 		return -ENOMEM;
 	}
 
-	*total = 0;
-	*success = 0;
+	stat->total = 0;
+	stat->success = 0;
 	last = 0;
-	*best = HUGE_VAL;
+	stat->best = HUGE_VAL;
 
-	if (start)
-		start_drop(ntasks, tasks, nfrequencies, frequencies,
-				nresources, verbose, list, ind,
-				success, total, best);
+	if (runtime.best_start)
+		start_drop(tset, freqs, res, runtime, ind, stat);
 
 	while (ind[0] < limits[0]) {
-		++(*total);
-		if (list)
-			printf("%03d -", *total);
-		for (i = 0; i < ntasks; i++) {
-			tasks[i].computation = tasks[i].wcec /
-							frequencies[ind[i]];
+		++stat->total;
+		if (runtime.list)
+			printf("%03d -", stat->total);
+		for (i = 0; i < tset.ntasks; i++) {
+			tset.tasks[i].computation = tset.tasks[i].wcec /
+						freqs.frequencies[ind[i]];
 		}
 
-		compute_sample_analysis(ntasks, tasks, nresources, verbose);
-		pass = evaluate_sample_response(ntasks, tasks, list, &spread);
-		*success += pass;
+		compute_sample_analysis(tset, res, runtime);
+		pass = evaluate_sample_response(tset, runtime, &spread);
+		stat->success += pass;
 
-		if (pass && spread < *best) {
-			*best = spread;
-			memcpy(*best_index, ind, ntasks);
+		if (pass && spread < stat->best) {
+			stat->best = spread;
+			memcpy(stat->best_index, ind, tset.ntasks);
 		}
 
-		if (jump && !pass) {
+		if (runtime.jump_samples && !pass) {
 			/* as we found the last, we can re-start it */
 			ind[last] = 0;
 
@@ -500,7 +470,7 @@ int enumerate_samples(int ntasks, struct task *tasks, int nfrequencies,
 			last = propagate(last, ind, limits);
 			continue;
 		}
-		last = propagate(ntasks - 1, ind, limits);
+		last = propagate(tset.ntasks - 1, ind, limits);
 	}
 
 	return 0;
