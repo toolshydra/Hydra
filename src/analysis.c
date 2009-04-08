@@ -305,7 +305,7 @@ void compute_sample_analysis(struct task_set tset, struct res_set res,
 	/* O(ntasks x nresources) */
 	compute_resource_priorities(tset, &res);
 	if (runtime.verbose)
-	/* O(ntasks) + 2xO(nresources) + O(ntasks x nresources) */
+		/* O(ntasks) + 2xO(nresources) + O(ntasks x nresources) */
 		print_task_model(tset, res);
 
 	/* O(nresources x ntasks ^ 2) */
