@@ -11,8 +11,6 @@
 #ifndef ANALYSIS_H
 #define ANALYSIS_H
 
-#define N_TRIES	5
-
 /* Task data */
 struct task {
 	float deadline;
@@ -65,15 +63,8 @@ struct results {
 	int *best_index;
 };
 
-void print_task_model(struct task_set tset, struct res_set res);
-void print_task_influencies(struct task_set tset);
-void print_task_analysis(struct task_set tset);
-int evaluate_sample_response(struct task_set tset, struct run_info runtime,
-				float *spread);
 int compute_initial_limits(struct task_set tset, struct freq_set freqs,
 				struct run_info runtime, int **start_limits);
-void compute_exclusion_influency(struct task_set tset, struct res_set res);
-void compute_precedence_influency(struct task_set tset);
 void compute_sample_analysis(struct task_set tset, struct res_set res,
 				struct run_info runtime);
 int enumerate_samples(struct task_set tset, struct freq_set freqs,

@@ -22,7 +22,7 @@
  * @parameter res: set of resources
  * @complexity: O(ntasks) + 2xO(nresources) + O(ntasks x nresources)
  */
-void print_task_model(struct task_set tset, struct res_set res)
+static void print_task_model(struct task_set tset, struct res_set res)
 {
 	int i;
 
@@ -66,7 +66,7 @@ void print_task_model(struct task_set tset, struct res_set res)
  * @parameter tset: set of tasks
  * @complexity: O(ntasks)
  */
-void print_task_influencies(struct task_set tset)
+static void print_task_influencies(struct task_set tset)
 {
 	int i;
 
@@ -87,7 +87,7 @@ void print_task_influencies(struct task_set tset)
  * @parameter tset: set of tasks
  * @complexity: O(ntasks)
  */
-void print_task_analysis(struct task_set tset)
+static void print_task_analysis(struct task_set tset)
 {
 	int i;
 
@@ -116,8 +116,8 @@ void print_task_analysis(struct task_set tset)
  * @parameter spread: how good the sample can spread the time for tasks
  * @complexity: O(ntasks)
  */
-int evaluate_sample_response(struct task_set tset, struct run_info runtime,
-				float *spread)
+static int evaluate_sample_response(struct task_set tset,
+					struct run_info runtime, float *spread)
 {
 	int i, ok;
 	char f[10];
@@ -168,48 +168,6 @@ int evaluate_sample_response(struct task_set tset, struct run_info runtime,
 }
 
 /*
- * compute_initial_limits: Compute limits of start point
- * @parameter tset: set of tasks
- * @parameter freqs: set of frequencies (available frequencies)
- * @parameter runtime: runtime info
- * @parameter start_limits: array of integer which will be filled with limits
- * @complexity: O(ntasks x nfrequencies)
- */
-int compute_initial_limits(struct task_set tset, struct freq_set freqs,
-				struct run_info runtime, int **start_limits)
-{
-	int i, j;
-	int *limits;
-	int err = 0;
-
-	limits = malloc(tset.ntasks * sizeof(int));
-	if (!limits) {
-		printf("Could not allocate memory for indices.\n");
-		err = -ENOMEM;
-		goto exit;
-	}
-
-	for (i = 0 ; i < tset.ntasks; i++)
-		limits[i] = freqs.nfrequencies;
-
-	if (!runtime.best_initial_limits)
-		goto exit;
-
-	for (i = freqs.nfrequencies - 1; i >= 0 ; i--) {
-		for (j = 0; j < tset.ntasks; j++) {
-			tset.tasks[j].computation = tset.tasks[j].wcec /
-							freqs.frequencies[i];
-			if (tset.tasks[j].computation > tset.tasks[j].deadline)
-				limits[j] = i;
-		}
-	}
-
-exit:
-	*start_limits = limits;
-	return err;
-}
-
-/*
  * compute_resource_priorities: Compute resource priorities
  * @parameter tset: a set of tasks
  * @parameter res: array of integer which will be filled with priorities
@@ -241,7 +199,8 @@ static void compute_resource_priorities(struct task_set tset,
  * @parameter res: set of integer with resource priorities
  * @complexity: O(nresources x ntasks ^ 2)
  */
-void compute_exclusion_influency(struct task_set tset, struct res_set res)
+static void compute_exclusion_influency(struct task_set tset,
+						struct res_set res)
 {
 	int i, j, k;
 
@@ -266,7 +225,7 @@ void compute_exclusion_influency(struct task_set tset, struct res_set res)
  * @parameter tset: set of tasks
  * @complexity: O(ntasks ^ 2)
  */
-void compute_precedence_influency(struct task_set tset)
+static void compute_precedence_influency(struct task_set tset)
 {
 	int i, j;
 	int success;
@@ -288,37 +247,6 @@ void compute_precedence_influency(struct task_set tset)
 			tset.tasks[i].Ip = Ip;
 		else
 			tset.tasks[i].Ip = -1;
-	}
-}
-
-/*
- * compute_sample_analysis: compute influency for each task
- * @parameter tset: set of tasks
- * @parameter res: set of resources
- * @parameter runtime: determines if output will be verbose
- * @complexity: O(nresources x ntasks ^ 2)
- */
-void compute_sample_analysis(struct task_set tset, struct res_set res,
-				struct run_info runtime)
-{
-
-	/* O(ntasks x nresources) */
-	compute_resource_priorities(tset, &res);
-	if (runtime.verbose)
-		/* O(ntasks) + 2xO(nresources) + O(ntasks x nresources) */
-		print_task_model(tset, res);
-
-	/* O(nresources x ntasks ^ 2) */
-	compute_exclusion_influency(tset, res);
-	/* O(ntasks ^ 2) */
-	compute_precedence_influency(tset);
-
-	if (runtime.verbose) {
-		/* O(ntasks) */
-		print_task_influencies(tset);
-
-		/* O(ntasks) */
-		print_task_analysis(tset);
 	}
 }
 
@@ -390,6 +318,79 @@ static int start_drop(struct task_set tset, struct freq_set freqs,
 		ind[i] = start;
 
 	return 0;
+}
+
+/*
+ * compute_initial_limits: Compute limits of start point
+ * @parameter tset: set of tasks
+ * @parameter freqs: set of frequencies (available frequencies)
+ * @parameter runtime: runtime info
+ * @parameter start_limits: array of integer which will be filled with limits
+ * @complexity: O(ntasks x nfrequencies)
+ */
+int compute_initial_limits(struct task_set tset, struct freq_set freqs,
+				struct run_info runtime, int **start_limits)
+{
+	int i, j;
+	int *limits;
+	int err = 0;
+
+	limits = malloc(tset.ntasks * sizeof(int));
+	if (!limits) {
+		printf("Could not allocate memory for indices.\n");
+		err = -ENOMEM;
+		goto exit;
+	}
+
+	for (i = 0 ; i < tset.ntasks; i++)
+		limits[i] = freqs.nfrequencies;
+
+	if (!runtime.best_initial_limits)
+		goto exit;
+
+	for (i = freqs.nfrequencies - 1; i >= 0 ; i--) {
+		for (j = 0; j < tset.ntasks; j++) {
+			tset.tasks[j].computation = tset.tasks[j].wcec /
+							freqs.frequencies[i];
+			if (tset.tasks[j].computation > tset.tasks[j].deadline)
+				limits[j] = i;
+		}
+	}
+
+exit:
+	*start_limits = limits;
+	return err;
+}
+
+/*
+ * compute_sample_analysis: compute influency for each task
+ * @parameter tset: set of tasks
+ * @parameter res: set of resources
+ * @parameter runtime: determines if output will be verbose
+ * @complexity: O(nresources x ntasks ^ 2)
+ */
+void compute_sample_analysis(struct task_set tset, struct res_set res,
+				struct run_info runtime)
+{
+
+	/* O(ntasks x nresources) */
+	compute_resource_priorities(tset, &res);
+	if (runtime.verbose)
+		/* O(ntasks) + 2xO(nresources) + O(ntasks x nresources) */
+		print_task_model(tset, res);
+
+	/* O(nresources x ntasks ^ 2) */
+	compute_exclusion_influency(tset, res);
+	/* O(ntasks ^ 2) */
+	compute_precedence_influency(tset);
+
+	if (runtime.verbose) {
+		/* O(ntasks) */
+		print_task_influencies(tset);
+
+		/* O(ntasks) */
+		print_task_analysis(tset);
+	}
 }
 
 /*

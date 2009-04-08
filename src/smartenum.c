@@ -118,7 +118,6 @@ static int read_task_model(struct task_set *tset, struct freq_set *freqs,
 			return err;
 		}
 
-
 	} while (++i < tset->ntasks);
 
 	return 0;
