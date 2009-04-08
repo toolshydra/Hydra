@@ -35,17 +35,16 @@ static void print_usage(char *program_name)
 {
 	printf("Usage:  %s options\n", program_name);
 	printf(
-		"  -h  --help             Display this usage information.\n"
-		"  -v  --verbose          Print verbose messages.\n"
-		"  -s  --summary          Print overall total numbers.\n"
-		"  -i  --best-initial-limits  Removes combinations by limiting too "
-							"low frequencies.\n"
-		"  -l  --list-samples     List each sample summary"
-							" analysis.\n"
-		"  -j  --jump-useless     Jump useless detected samples.\n"
-		"  -k  --start-drop       Drop initial useless samples.\n"
-		"      --heuristic=       Specify an heuristic to use.\n"
-		"                         Available heuristics: usage_first\n");
+	"  -h  --help                        Display this usage information.\n"
+	"  -v  --verbose                     Print verbose messages.\n"
+	"  -s  --summary                     Print overall total numbers.\n"
+	"  -i  --best-initial-limits         Removes combinations by "
+					"limiting too low frequencies.\n"
+	"  -l  --list-samples                List each sample summary"
+						" analysis.\n"
+	"  -j  --jump-useless                Jump useless detected samples.\n"
+	"  -k  --start-drop                  Drop initial useless samples.\n"
+	"      --heuristic={usage_first}     Specify an heuristic to use.\n");
 }
 /*
  * read_array: Reads an array of floats which may represent a sequence of
@@ -125,6 +124,13 @@ static int read_task_model(struct task_set *tset, struct freq_set *freqs,
 	return 0;
 }
 
+/*
+ * print_summary: print statistics about the execution
+ * @parameter tset: set of tasks
+ * @parameter freqs: set of tasks
+ * @parameter stat: information about the execution
+ * @complexity: O(ntasks)
+ */
 void print_summary(struct task_set tset, struct freq_set freqs,
 			struct results stat)
 {
