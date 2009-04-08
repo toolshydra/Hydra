@@ -271,11 +271,12 @@ static int propagate(int last, int *ind, int *limits)
 }
 
 /*
- * compute_sample_analysis: compute influency for each task
+ * start_drop: binary search for an optimal start point
  * @parameter tset: set of tasks
  * @parameter freqs: set of float with available frequencies
  * @parameter res: set of resources
  * @parameter runtime: runtime info
+ * @parameter ind: an array of indexes to be filled up
  * @parameter stat: computed stats results
  * @complexity: O(log(nfrequencies)) + O(ntask)
  */
@@ -394,7 +395,7 @@ void compute_sample_analysis(struct task_set tset, struct res_set res,
 }
 
 /*
- * compute_sample_analysis: compute influency for each task
+ * enumerate_samples: go enumerating samples and branch when possible
  * @parameter tset: set of tasks
  * @parameter freqs: set of frequencies
  * @parameter res: set of resources
