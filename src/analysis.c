@@ -422,17 +422,11 @@ int enumerate_samples(struct task_set tset, struct freq_set freqs,
 	memset(ind, tset.ntasks, 0);
 
 	stat->best_index = malloc(tset.ntasks * sizeof(int));
-	if (!ind) {
+	if (!stat->best_index) {
 		printf("Could not allocate memory for indices.\n");
 		return -ENOMEM;
 	}
 	memset(stat->best_index, tset.ntasks, 0);
-
-	ind = malloc(tset.ntasks * sizeof(int));
-	if (!ind) {
-		printf("Could not allocate memory for indices.\n");
-		return -ENOMEM;
-	}
 
 	stat->total = 0;
 	stat->success = 0;
