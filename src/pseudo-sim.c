@@ -107,8 +107,11 @@ static int read_frequencies(char *freq_file_name, struct freq_set *freqs)
 	FILE *f;
 
 	f = fopen(freq_file_name, "r");
-	if (!f)
+	if (!f) {
+		printf("Could not open freq file %s\n",
+							freq_file_name);
 		return -EIO;
+	}
 
 	/* O(nfrequencies) */
 	err = read_array(f, freqs->nfrequencies, &freqs->frequencies);
