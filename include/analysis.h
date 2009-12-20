@@ -11,15 +11,16 @@
 #ifndef ANALYSIS_H
 #define ANALYSIS_H
 
+#define NTRIES	1000
 /* Task data */
 struct task {
-	float deadline;
-	float wcec;
-	float computation;
-	float Ip;
-	float Ib;
-	float Ij;
-	float *resources;
+	double deadline;
+	double wcec;
+	double computation;
+	double Ip;
+	double Ib;
+	double Ij;
+	double *resources;
 };
 
 #define	task_res_use(t, i)		(t.resources[i] * t.computation)
@@ -35,7 +36,7 @@ struct task_set {
 
 struct freq_set {
 	int nfrequencies;
-	float *frequencies;
+	double *frequencies;
 };
 
 struct res_set {
@@ -46,6 +47,7 @@ struct res_set {
 /* Runtime data */
 struct run_info {
 	int summary:1;			/* print a summary in the end */
+	int tabular:1;			/* print a summary in one line */
 	int verbose:1;			/* verbose execution */
 	int list:1;			/* list samples */
 	int best_start:1;		/* comput best start point */
@@ -59,7 +61,7 @@ struct results {
 	struct timeval e;
 	int success;
 	int total;
-	float best;
+	double best;
 	int *best_index;
 };
 

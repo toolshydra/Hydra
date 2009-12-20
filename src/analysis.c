@@ -33,7 +33,7 @@ static void print_task_model(struct task_set tset, struct res_set res)
 	printf("Task\tPriority\tComputation\tDeadline\n");
 
 	for (i = 0; i < tset.ntasks; i++)
-		printf("T%d\t%d\t\t%.2f\t\t%.2f\n", i + 1, i,
+		printf("T%d\t%d\t\t%.2lf\t\t%.2lf\n", i + 1, i,
 			tset.tasks[i].computation, tset.tasks[i].deadline);
 
 	printf("\n******************\n");
@@ -50,7 +50,7 @@ static void print_task_model(struct task_set tset, struct res_set res)
 		printf("T%d\t", i + 1);
 
 		for (j = 0; j < res.nresources; j++)
-			printf("%.2f%%\t", tset.tasks[i].resources[j] * 100);
+			printf("%.2lf%%\t", tset.tasks[i].resources[j] * 100);
 		printf("\n");
 
 	}
@@ -75,9 +75,9 @@ static void print_task_influencies(struct task_set tset)
 	printf("*************\n");
 	printf("Task\tIp\tIb\tIj\tI\n");
 	for (i = 0; i < tset.ntasks; i++) {
-		float I = tset.tasks[i].Ip + tset.tasks[i].Ib +
+		double I = tset.tasks[i].Ip + tset.tasks[i].Ib +
 				tset.tasks[i].Ij;
-		printf("T%d\t%.2f\t%.2f\t%.2f\t%.2f\n", i + 1, tset.tasks[i].Ip,
+		printf("T%d\t%.2lf\t%.2lf\t%.2lf\t%.2lf\n", i + 1, tset.tasks[i].Ip,
 			tset.tasks[i].Ib, tset.tasks[i].Ij, I);
 	}
 }
@@ -98,13 +98,13 @@ static void print_task_analysis(struct task_set tset)
 								"\tD - R\n");
 
 	for (i = 0; i < tset.ntasks; i++)
-		printf("T%d\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f\t\t%.2f\n",
+		printf("T%d\t%.2lf\t\t%.2lf\t\t%.2lf\t\t%.2lf\t\t%.2lf\t\t%.2lf\n",
 			i + 1,
 			tset.tasks[i].computation,
-			0,
+			0.0,
 			response(tset.tasks[i]),
 			tset.tasks[i].deadline,
-			0,
+			0.0,
 			tset.tasks[i].deadline - response(tset.tasks[i]));
 
 }
@@ -117,23 +117,23 @@ static void print_task_analysis(struct task_set tset)
  * @complexity: O(ntasks)
  */
 static int evaluate_sample_response(struct task_set tset,
-					struct run_info runtime, float *spread)
+					struct run_info runtime, double *spread)
 {
 	int i, ok;
 	char f[10];
 	char di, de;
-	float s = 0;
+	double s = 0;
 
 	if (runtime.list) {
 		for (i = 0; i < tset.ntasks; i++)
-			printf(" %6.2f", tset.tasks[i].computation);
+			printf(" %6.2lf", tset.tasks[i].computation);
 
 		printf("\t[ ");
 	}
 
 	ok = 1;
 	for (i = 0; i < tset.ntasks; i++) {
-		float dx;
+		double dx;
 		if (tset.tasks[i].deadline < response(tset.tasks[i]) ||
 			(tset.tasks[i].Ip < 0)) {
 			di = '<';
@@ -146,7 +146,7 @@ static int evaluate_sample_response(struct task_set tset,
 			dx = tset.tasks[i].deadline - response(tset.tasks[i]);
 		}
 
-		sprintf(f, "%7.2f", dx);
+		sprintf(f, "%7.2lf", dx);
 		if (runtime.list)
 			printf("%c%7s%c ", di, f, de);
 
@@ -155,9 +155,9 @@ static int evaluate_sample_response(struct task_set tset,
 
 	if (runtime.list) {
 		if (ok)
-			printf("]\t%-4s %7.2f", "OK", s);
+			printf("]\t%-4s %7.2lf", "OK", s);
 		else
-			printf("]\t%-4s %7.2f", "NOT", -1.0);
+			printf("]\t%-4s %7.2lf", "NOT", -1.0);
 		printf("\n");
 	}
 
@@ -179,9 +179,10 @@ static void compute_resource_priorities(struct task_set tset,
 	int *p;
 	int i, j;
 
-	res->resource_priorities = malloc(sizeof(int) * res->nresources);
+	res->resource_priorities = (int *)malloc(sizeof(int) * res->nresources);
 	p = res->resource_priorities;
-	memset(p, -1, res->nresources);
+	for (i = 0; i < res->nresources; i++)
+		p[i] = -1;
 
 	for (i = 0; i < res->nresources; i++) {
 		for (j = 0; j < tset.ntasks; j++) {
@@ -229,12 +230,15 @@ static void compute_precedence_influency(struct task_set tset)
 {
 	int i, j;
 	int success;
-	float Ip, Ipa;
+	double Ip, Ipa;
+	int tries;
 
 	for (i = 0; i < tset.ntasks; i++) {
 		Ip = tset.tasks[i].computation + tset.tasks[i].Ib;
 		success = 0;
-		while (!success && Ip <= tset.tasks[i].deadline) {
+		tries = 0;
+		while (!success && Ip <= tset.tasks[i].deadline &&
+							tries++ < NTRIES) {
 			Ipa = Ip;
 			Ip = tset.tasks[i].computation + tset.tasks[i].Ib;
 			for (j = i - 1; j >= 0; j--)
@@ -273,19 +277,21 @@ static int propagate(int last, int *ind, int *limits)
 /*
  * start_drop: binary search for an optimal start point
  * @parameter tset: set of tasks
- * @parameter freqs: set of float with available frequencies
+ * @parameter freqs: set of double with available frequencies
  * @parameter res: set of resources
  * @parameter runtime: runtime info
  * @parameter ind: an array of indexes to be filled up
+ * @parameter limits: an array of limits to be filled up
+ * @parameter done: an array of done indexes to be filled up
  * @parameter stat: computed stats results
  * @complexity: O(log(nfrequencies)) + O(ntask)
  */
 static int start_drop(struct task_set tset, struct freq_set freqs,
 			struct res_set res, struct run_info runtime, int *ind,
-			struct results *stat)
+			int *limits, int *done, struct results *stat)
 {
 	int i, f, m, pass, last, start;
-	float spread;
+	double spread;
 
 	f = 0;
 	last = freqs.nfrequencies - 1;
@@ -297,6 +303,7 @@ static int start_drop(struct task_set tset, struct freq_set freqs,
 			tset.tasks[i].computation = tset.tasks[i].wcec /
 						freqs.frequencies[ind[i]];
 		}
+		done[m] = 1;
 		if (runtime.list)
 			printf("%03d -", stat->total, m);
 
@@ -318,7 +325,7 @@ static int start_drop(struct task_set tset, struct freq_set freqs,
 	for (i = 0; i < tset.ntasks; i++)
 		ind[i] = start;
 
-	return 0;
+	return propagate(tset.ntasks - 1, ind, limits);
 }
 
 /*
@@ -336,7 +343,7 @@ int compute_initial_limits(struct task_set tset, struct freq_set freqs,
 	int *limits;
 	int err = 0;
 
-	limits = malloc(tset.ntasks * sizeof(int));
+	limits = (int *)malloc(tset.ntasks * sizeof(int));
 	if (!limits) {
 		printf("Could not allocate memory for indices.\n");
 		err = -ENOMEM;
@@ -382,6 +389,7 @@ void compute_sample_analysis(struct task_set tset, struct res_set res,
 
 	/* O(nresources x ntasks ^ 2) */
 	compute_exclusion_influency(tset, res);
+	free(res.resource_priorities);
 	/* O(ntasks ^ 2) */
 	compute_precedence_influency(tset);
 
@@ -412,31 +420,55 @@ int enumerate_samples(struct task_set tset, struct freq_set freqs,
 	int i, last;
 	int pass;
 	int *ind;
-	float spread;
+	int *done;
+	int jump_done;
+	double spread;
 
-	ind = malloc(tset.ntasks * sizeof(int));
+	ind = (int *)malloc(tset.ntasks * sizeof(int));
 	if (!ind) {
 		printf("Could not allocate memory for indices.\n");
 		return -ENOMEM;
 	}
-	memset(ind, tset.ntasks, 0);
+	for (i = 0; i < tset.ntasks; i++)
+		ind[i] = 0;
 
-	stat->best_index = malloc(tset.ntasks * sizeof(int));
+	done = (int *)malloc(freqs.nfrequencies * sizeof(int));
+	if (!done) {
+		printf("Could not allocate memory for done array.\n");
+		return -ENOMEM;
+	}
+	for (i = 0; i < freqs.nfrequencies; i++)
+		done[i] = 0;
+
+	stat->best_index = (int *)malloc(tset.ntasks * sizeof(int));
 	if (!stat->best_index) {
 		printf("Could not allocate memory for indices.\n");
 		return -ENOMEM;
 	}
-	memset(stat->best_index, tset.ntasks, 0);
+	for (i = 0; i < tset.ntasks; i++)
+		stat->best_index[i] = 0;
 
 	stat->total = 0;
 	stat->success = 0;
-	last = 0;
+	last = tset.ntasks - 1;
 	stat->best = HUGE_VAL;
 
 	if (runtime.best_start)
-		start_drop(tset, freqs, res, runtime, ind, stat);
+		start_drop(tset, freqs, res, runtime, ind, limits, done, stat);
 
 	while (ind[0] < limits[0]) {
+		if (done[ind[0]]) {
+			jump_done = 1;
+			for (i = 1; i < tset.ntasks; i++)
+				if (ind[i] != ind[0]) {
+					jump_done = 0;
+					break;
+				}
+			if (jump_done) {
+				last = propagate(tset.ntasks - 1, ind, limits);
+				continue;
+			}
+		}
 		++stat->total;
 		if (runtime.list)
 			printf("%03d -", stat->total);
@@ -468,6 +500,9 @@ int enumerate_samples(struct task_set tset, struct freq_set freqs,
 		}
 		last = propagate(tset.ntasks - 1, ind, limits);
 	}
+
+	free(done);done = NULL;
+	free(ind);ind = NULL;
 
 	return 0;
 }
