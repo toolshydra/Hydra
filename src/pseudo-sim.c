@@ -20,6 +20,10 @@
 
 #include <analysis.h>
 
+static double wcec_min = 100, wcec_max = 200;
+static double period_min = 10, period_max = 50;
+static double usage_min = 0, usage_max = .25;
+
 static double inline next_ak(double min, double max) {
 	double v;
 
@@ -30,11 +34,12 @@ static double inline next_ak(double min, double max) {
 	return v;
 }
 
-static const char *short_options = "hvf:tiljkn:m:p:";
+static const char *short_options = "hvf:tiljkn:m:p:r:";
 static const struct option long_options[] = {
 	{ "help",     0, NULL, 'h' },
 	{ "verbose",  0, NULL, 'v' },
 	{ "freq-file",  required_argument, NULL, 'f' },
+	{ "range-file",  required_argument, NULL, 'p' },
 	{ "tabular",  0, NULL, 't' },
 	{ "best-initial-limits",  0, NULL, 'i' },
 	{ "list-samples",  0, NULL, 'l' },
@@ -48,10 +53,12 @@ static const struct option long_options[] = {
 
 static void print_usage(char *program_name)
 {
-	printf("Usage:  %s options\n", program_name);
+	printf("Usage: %s -m nfreq -f <file> options\n", program_name);
 	printf(
 	"  -h  --help                        Display this usage information.\n"
 	"  -v  --verbose                     Print verbose messages.\n"
+	"  -f  --freq-file=<file-name>       File name with frequencies.\n"
+	"  -r  --range-file=<file-name>      File name with wcec range.\n"
 	"  -t  --tabular                     Print overall total numbers in one line.\n"
 	"       (Total samples | Evaluated samples | Feasible samples | Time of processing).\n"
 	"  -i  --best-initial-limits         Removes combinations by "
@@ -63,6 +70,27 @@ static void print_usage(char *program_name)
 	"  -n  --task-count=<res-count>      Number of frequencies.\n"
 	"  -m  --freq-count=<freq-count>     Number of frequencies.\n"
 	"  -p  --res-count=<res-count>       Number of resources.\n");
+}
+
+static int read_ranges(char *range_file_name)
+{
+	int err = 0;
+	FILE *f;
+
+	f = fopen(range_file_name, "r");
+	if (!f) {
+		printf("Could not open range file %s\n",
+							range_file_name);
+		return -EIO;
+	}
+
+	fscanf(f, "%lf %lf %lf %lf %lf %lf",
+		&wcec_min, &wcec_max,
+		&period_min, &period_max,
+		&usage_min, &usage_max);
+	fclose(f);
+
+	return err;
 }
 
 /*
@@ -179,11 +207,12 @@ static int gen_task_model(struct task_set *tset, int nresources)
 	do {
 		struct task *t = tset->tasks + i;
 
-		t->wcec = next_ak(100, 200);
-		t->deadline = next_ak(10, 50);
+		t->wcec = next_ak(wcec_min, wcec_max);
+		t->deadline = next_ak(period_min, period_max);
 		t->Ij = 1;
 
-		err = gen_array(nresources, &t->resources, 0, 0.25);
+		err = gen_array(nresources, &t->resources, usage_min,
+								usage_max);
 		if (err < 0) {
 			printf("Could not read array of resources for task"
 				" %d.\n", i);
@@ -240,6 +269,7 @@ int main(int argc, char *argv[])
 	int err = 0;
 	int i;
 	char *freq_file_name = NULL;
+	char *range_file_name = NULL;
 
 	memset(&runtime, 0, sizeof(runtime));
 
@@ -301,12 +331,24 @@ int main(int argc, char *argv[])
 			}
 			freq_file_name = optarg;
 			break;
+		case 'r':   /* -r or --range-file */
+			if (!optarg) {
+				fprintf(stderr, "Specify file with ranges.\n");
+				print_usage(argv[0]);
+				return -EINVAL;
+			}
+			range_file_name = optarg;
+			break;
 		case -1:    /* Done with options.  */
 			break;
 		}
 	} while (next_option != -1);
 
 	err = read_frequencies(freq_file_name, &freqs);
+	if (err < 0)
+		goto exit;
+
+	err = read_ranges(range_file_name);
 	if (err < 0)
 		goto exit;
 
