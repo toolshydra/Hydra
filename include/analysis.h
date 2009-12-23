@@ -67,9 +67,17 @@ struct results {
 
 int compute_initial_limits(struct task_set tset, struct freq_set freqs,
 				struct run_info runtime, int **start_limits);
-void compute_sample_analysis(struct task_set tset, struct res_set res,
+void compute_sample_analysis(struct task_set tset, struct res_set *res,
 				struct run_info runtime);
 int enumerate_samples(struct task_set tset, struct freq_set freqs,
-			struct res_set res, int *limits,
+			struct res_set *res, int *limits,
 			struct run_info runtime, struct results *stat);
+int enumeration_init(struct task_set *tset, struct freq_set *freqs,
+			struct results *stat,
+			struct res_set *res,
+			int **limits);
+int enumeration_cleanup(struct task_set *tset, struct freq_set *freqs,
+			struct results *stat,
+			struct res_set *res,
+			int *limits);
 #endif

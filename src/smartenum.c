@@ -273,7 +273,7 @@ int main(int argc, char *argv[])
 		goto exit;
 	}
 
-	err = enumerate_samples(tset, freqs, res, limits, runtime, &stat);
+	err = enumerate_samples(tset, freqs, &res, limits, runtime, &stat);
 	if (err < 0) {
 		printf("Error while enumerating samples\n");
 		goto exit;

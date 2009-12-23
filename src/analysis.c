@@ -179,7 +179,6 @@ static void compute_resource_priorities(struct task_set tset,
 	int *p;
 	int i, j;
 
-	res->resource_priorities = (int *)malloc(sizeof(int) * res->nresources);
 	p = res->resource_priorities;
 	for (i = 0; i < res->nresources; i++)
 		p[i] = -1;
@@ -287,7 +286,7 @@ static int propagate(int last, int *ind, int *limits)
  * @complexity: O(log(nfrequencies)) + O(ntask)
  */
 static int start_drop(struct task_set tset, struct freq_set freqs,
-			struct res_set res, struct run_info runtime, int *ind,
+			struct res_set *res, struct run_info runtime, int *ind,
 			int *limits, int *done, struct results *stat)
 {
 	int i, f, m, pass, last, start;
@@ -343,13 +342,7 @@ int compute_initial_limits(struct task_set tset, struct freq_set freqs,
 	int *limits;
 	int err = 0;
 
-	limits = (int *)malloc(tset.ntasks * sizeof(int));
-	if (!limits) {
-		printf("Could not allocate memory for indices.\n");
-		err = -ENOMEM;
-		goto exit;
-	}
-
+	limits = *start_limits;
 	for (i = 0 ; i < tset.ntasks; i++)
 		limits[i] = freqs.nfrequencies;
 
@@ -377,19 +370,18 @@ exit:
  * @parameter runtime: determines if output will be verbose
  * @complexity: O(nresources x ntasks ^ 2)
  */
-void compute_sample_analysis(struct task_set tset, struct res_set res,
+void compute_sample_analysis(struct task_set tset, struct res_set *res,
 				struct run_info runtime)
 {
 
 	/* O(ntasks x nresources) */
-	compute_resource_priorities(tset, &res);
+	compute_resource_priorities(tset, res);
 	if (runtime.verbose)
 		/* O(ntasks) + 2xO(nresources) + O(ntasks x nresources) */
-		print_task_model(tset, res);
+		print_task_model(tset, *res);
 
 	/* O(nresources x ntasks ^ 2) */
-	compute_exclusion_influency(tset, res);
-	free(res.resource_priorities);
+	compute_exclusion_influency(tset, *res);
 	/* O(ntasks ^ 2) */
 	compute_precedence_influency(tset);
 
@@ -412,39 +404,25 @@ void compute_sample_analysis(struct task_set tset, struct res_set res,
  * @parameter stat: struct to store statistic info
  * @complexity: O(nfrequencies ^ ntasks) x O(nresources x ntasks ^ 2)
  */
+static int *ind = NULL;
+static int *done = NULL;
+
 int enumerate_samples(struct task_set tset, struct freq_set freqs,
-			struct res_set res, int *limits,
+			struct res_set *res, int *limits,
 			struct run_info runtime, struct results *stat)
 {
 
 	int i, last;
 	int pass;
-	int *ind;
-	int *done;
 	int jump_done;
 	double spread;
 
-	ind = (int *)malloc(tset.ntasks * sizeof(int));
-	if (!ind) {
-		printf("Could not allocate memory for indices.\n");
-		return -ENOMEM;
-	}
 	for (i = 0; i < tset.ntasks; i++)
 		ind[i] = 0;
 
-	done = (int *)malloc(freqs.nfrequencies * sizeof(int));
-	if (!done) {
-		printf("Could not allocate memory for done array.\n");
-		return -ENOMEM;
-	}
 	for (i = 0; i < freqs.nfrequencies; i++)
 		done[i] = 0;
 
-	stat->best_index = (int *)malloc(tset.ntasks * sizeof(int));
-	if (!stat->best_index) {
-		printf("Could not allocate memory for indices.\n");
-		return -ENOMEM;
-	}
 	for (i = 0; i < tset.ntasks; i++)
 		stat->best_index[i] = 0;
 
@@ -501,9 +479,94 @@ int enumerate_samples(struct task_set tset, struct freq_set freqs,
 		last = propagate(tset.ntasks - 1, ind, limits);
 	}
 
-	free(done);done = NULL;
-	free(ind);ind = NULL;
+	return 0;
+}
+
+int enumeration_init(struct task_set *tset, struct freq_set *freqs,
+			struct results *stat,
+			struct res_set *res,
+			int **limits)
+{
+	int i;
+
+	tset->tasks = (struct task *)malloc(tset->ntasks *
+						sizeof(*tset->tasks));
+
+	if (!tset->tasks) {
+		printf("Could not allocate memory for %d tasks.\n",
+							tset->ntasks);
+		return -ENOMEM;
+	}
+
+	*limits = (int *)malloc(tset->ntasks * sizeof(int));
+	if (!*limits) {
+		printf("Could not allocate memory for indices.\n");
+		return -ENOMEM;
+	}
+
+	ind = (int *)malloc(tset->ntasks * sizeof(int));
+	if (!ind) {
+		printf("Could not allocate memory for indices.\n");
+		return -ENOMEM;
+	}
+
+	stat->best_index = (int *)malloc(tset->ntasks * sizeof(int));
+	if (!stat->best_index) {
+		printf("Could not allocate memory for indices.\n");
+		return -ENOMEM;
+	}
+
+	for (i = 0; i < tset->ntasks; i++) {
+		struct task *t = tset->tasks + i;
+
+		t->resources = (double *)malloc(sizeof(double) * res->nresources);
+		if (!t->resources) {
+			printf("Could not allocate memory for array\n");
+			return -ENOMEM;
+		}
+	}
+
+	res->resource_priorities = (int *)malloc(sizeof(int) * res->nresources);
+	if (!res->resource_priorities) {
+		printf("Could not allocate memory for resource priorities.\n");
+		return -ENOMEM;
+	}
+
+	freqs->frequencies = (double *)malloc(sizeof(double) * freqs->nfrequencies);
+	if (!freqs->frequencies) {
+		printf("Could not allocate memory for array\n");
+		return -ENOMEM;
+	}
+
+	done = (int *)malloc(freqs->nfrequencies * sizeof(int));
+	if (!done) {
+		printf("Could not allocate memory for done array.\n");
+		return -ENOMEM;
+	}
 
 	return 0;
+}
+
+int enumeration_cleanup(struct task_set *tset, struct freq_set *freqs,
+			struct results *stat,
+			struct res_set *res,
+			int *limits)
+{
+	int i;
+
+	for (i = 0; i < tset->ntasks; i++) {
+		struct task *t = tset->tasks + i;
+
+		free(t->resources);
+	}
+	free(tset->tasks);
+	free(limits);
+	free(ind);
+
+	free(freqs->frequencies);
+	free(done);
+
+	free(stat->best_index);
+	free(res->resource_priorities);
 }
 

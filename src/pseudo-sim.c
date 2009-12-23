@@ -15,6 +15,7 @@
 #include <string.h>
 #include <math.h>
 #include <getopt.h>
+#include <signal.h>
 
 #include <akaroa.H>
 
@@ -105,13 +106,6 @@ static int read_array(FILE *f, int n, double **a)
 	int j = 0;
 	double *c;
 
-	*a = (double *)malloc(sizeof(double) * n);
-
-	if (!a) {
-		printf("Could not allocate memory for array\n");
-		return -ENOMEM;
-	}
-
 	c = *a;
 
 	do {
@@ -165,13 +159,6 @@ static int gen_array(int n, double **a, double min, double max)
 	int j = 0;
 	double *c;
 
-	*a = (double *)malloc(sizeof(double) * n);
-
-	if (!a) {
-		printf("Could not allocate memory for array\n");
-		return -ENOMEM;
-	}
-
 	c = *a;
 
 	do {
@@ -194,15 +181,6 @@ static int gen_task_model(struct task_set *tset, int nresources)
 	int i = 0;
 	int err;
 	FILE *f;
-
-	tset->tasks = (struct task *)malloc(tset->ntasks *
-						sizeof(*tset->tasks));
-
-	if (!tset->tasks) {
-		printf("Could not allocate memory for %d tasks.\n",
-							tset->ntasks);
-		return -ENOMEM;
-	}
 
 	do {
 		struct task *t = tset->tasks + i;
@@ -270,6 +248,13 @@ int main(int argc, char *argv[])
 	int i;
 	char *freq_file_name = NULL;
 	char *range_file_name = NULL;
+
+void leave(int sig) {
+	/* clean up procedure */
+	enumeration_cleanup(&tset, &freqs, &stat, &res, limits);
+}
+
+	(void) signal(SIGTERM,leave);
 
 	memset(&runtime, 0, sizeof(runtime));
 
@@ -344,6 +329,10 @@ int main(int argc, char *argv[])
 		}
 	} while (next_option != -1);
 
+	err = enumeration_init(&tset, &freqs, &stat, &res, &limits);
+	if (err < 0)
+		goto exit;
+
 	err = read_frequencies(freq_file_name, &freqs);
 	if (err < 0)
 		goto exit;
@@ -355,11 +344,6 @@ int main(int argc, char *argv[])
 	/* evaluated and time */
 	AkDeclareParameters(2);
 	while (!AkSimulationOver()) {
-		limits = NULL;
-		tset.tasks = NULL;
-		stat.best_index = NULL;
-		res.resource_priorities = NULL;
-		memset(&stat, 0, sizeof(stat));
 		/* O(nfrequencies) + O(ntasks x nresources) */
 		err = gen_task_model(&tset, res.nresources);
 		if (err < 0) {
@@ -375,7 +359,7 @@ int main(int argc, char *argv[])
 			goto exit;
 		}
 
-		err = enumerate_samples(tset, freqs, res, limits, runtime, &stat);
+		err = enumerate_samples(tset, freqs, &res, limits, runtime, &stat);
 		if (err < 0) {
 			printf("Error while enumerating samples\n");
 			goto exit;
@@ -389,16 +373,7 @@ int main(int argc, char *argv[])
 		AkParamObservation(1,
 				stat.total / pow(freqs.nfrequencies, tset.ntasks));
 		AkParamObservation(2, get_execution_time(stat));
-		/* clean up procedure */
-		free(limits);
-		for (i = 0; i < tset.ntasks; i++)
-			free(tset.tasks[i].resources);
-		free(tset.tasks);
-		free(stat.best_index);
-		/* no need to free resource_priorities */
 	}
-
-	free(freqs.frequencies); freqs.frequencies =NULL;
 
 exit:
 	return err;
