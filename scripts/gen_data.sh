@@ -1,16 +1,80 @@
 #! /bin/bash
 
+NO_ARGS=0
+E_OPTERROR=85
+
+
 FREQ_FILE=freqs.txt
 RANGE_FILE=range.txt
 NFREQ=5
 NRES=5
-SIMU=$(pwd)/../src/pseudosim
+SE=/home/evalenti/trees/smartenum
+SIMU=$SE/src/pseudosim
+SCRIPTS=$SE/scripts
 ARGS="-m $NFREQ -p $NRES -f $FREQ_FILE -r $RANGE_FILE"
 AKAROA_HOME=/usr/local/akaroa/bin
 AKRUN=$AKAROA_HOME/akrun
 AKMASTER=$AKAROA_HOME/akmaster
 AKSLAVE=$AKAROA_HOME/akslave
-NSIMU=4
+NSIMU=8
+LOGDIR=$(pwd)/log
+DATADIR=$(pwd)/data
+GRAPHDIR=$(pwd)/graph
+
+if [ $# -eq "$NO_ARGS" ]    # Script invoked with no command-line args?
+then
+  echo "Usage: `basename $0` options (-t)"
+  exit $E_OPTERROR          # Exit and explain usage.
+                            # Usage: scriptname -options
+                            # Note: dash (-) necessary
+fi
+
+
+while getopts "s:e:dn:" Option
+do
+  case $Option in
+    s     ) START=$OPTARG ;;
+    e     ) END=$OPTARG ;;
+    n     ) NSIMU=$OPTARG ;;
+    d     ) DRY=true ;;
+    *     ) echo "Unimplemented option chosen." && exit $E_OPTERROR;;   # Default.
+  esac
+done
+
+shift $(($OPTIND - 1))
+
+if [ -z "$START" ] ; then
+	echo "Specify -s N"
+	exit $E_OPTERROR
+fi
+
+if [ -z "$END" ] ; then
+	echo "Specify -e N"
+	exit $E_OPTERROR
+fi
+
+
+function process_results {
+	N=$1
+	if [ -z "$DRY" ] ; then
+		pushd $LOGDIR && $SCRIPTS/process_data.sh -t evaluated -n $N && popd
+		pushd $LOGDIR && $SCRIPTS/process_data.sh -t "time" -n $N && popd
+		mv $LOGDIR/*dat $DATADIR
+		Y=$(head -n 1 $DATADIR/$N.time.dat | awk '{ print $2 }' | cut -d. -f 1)
+		Y=$(expr $Y \/ 100 \* 10 + $Y)
+		pushd $DATADIR && $SCRIPTS/plot_time.sh -y $Y $N.time.dat && popd
+		pushd $DATADIR && $SCRIPTS/plot_evaluated.sh $N.evaluated.dat && popd
+		mv $DATADIR/*jpg $GRAPHDIR
+	fi
+}
+
+function do_simul {
+	CMD=$1
+	date
+	echo $CMD
+	$CMD
+	date
+}
 
 # A  -i  --best-initial-limits         Removes combinations by limiting too low frequencies.
 # B  -k  --start-drop                  Drop initial useless samples.
@@ -20,49 +84,30 @@ function exec_simul {
 	NTASK=$1
 
 	echo "Generating simulation batch for $NTASK tasks"
-	echo "Executing type -"
-	echo "$AKRUN -n $NSIMU -- $SIMU $ARGS -n $NTASK >>& $NTASK.-.log"
-	date > $NTASK.-.log
-	$AKRUN -n $NSIMU -- $SIMU $ARGS -n $NTASK >>& $NTASK.-.log
-	date >> $NTASK.-.log
-	echo "Executing type A"
-	echo "$AKRUN -n $NSIMU -- $SIMU $ARGS -i -n $NTASK  >>& $NTASK.A.log"
-	date > $NTASK.A.log
-	$AKRUN -n $NSIMU -- $SIMU $ARGS -i -n $NTASK  >>& $NTASK.A.log
-	date >> $NTASK.A.log
-	echo "Executing type B"
-	echo "$AKRUN -n $NSIMU -- $SIMU $ARGS -k -n $NTASK  >>& $NTASK.B.log"
-	date > $NTASK.B.log
-	$AKRUN -n $NSIMU -- $SIMU $ARGS -k -n $NTASK >>& $NTASK.B.log
-	date >> $NTASK.B.log
-	echo "Executing type C"
-	echo "$AKRUN -n $NSIMU -- $SIMU $ARGS -j -n $NTASK >>& $NTASK.C.log"
-	date > $NTASK.C.log
-	$AKRUN -n $NSIMU -- $SIMU $ARGS -j -n $NTASK  >>& $NTASK.C.log
-	date >> $NTASK.C.log
-	echo "Executing type A+B"
-	echo "$AKRUN -n $NSIMU -- $SIMU $ARGS -i -k -n $NTASK  >>& $NTASK.A+B.log"
-	date > $NTASK.A+B.log
-	$AKRUN -n $NSIMU -- $SIMU $ARGS -i -k -n $NTASK  >>& $NTASK.A+B.log
-	date >> $NTASK.A+B.log
-	echo "Executing type A+C"
-	echo "$AKRUN -n $NSIMU -- $SIMU $ARGS -i -j -n $NTASK  >>& $NTASK.A+C.log"
-	date > $NTASK.A+C.log
-	$AKRUN -n $NSIMU -- $SIMU $ARGS -i -j -n $NTASK  >>& $NTASK.A+C.log
-	date >> $NTASK.A+C.log
-	echo "Executing type B+C"
-	echo "$AKRUN -n $NSIMU -- $SIMU $ARGS -k -j -n $NTASK  >>& $NTASK.B+C.log"
-	date > $NTASK.B+C.log
-	$AKRUN -n $NSIMU -- $SIMU $ARGS -k -j -n $NTASK  >>& $NTASK.B+C.log
-	date >> $NTASK.B+C.log
-	echo "Executing type A+B+C"
-	echo "$AKRUN -n $NSIMU -- $SIMU $ARGS -i -k -j -n $NTASK  >>& $NTASK.A+B+C.log"
-	date > $NTASK.A+B+C.log
-	$AKRUN -n $NSIMU -- $SIMU $ARGS -i -k -j -n $NTASK  >>& $NTASK.A+B+C.log
-	date >> $NTASK.A+B+C.log
+	for P in - A B C A+B A+C B+C A+B+C ; do
+		O=$(echo $P | sed -e 's/+/ /g')
+		O=$(echo $O | sed -e 's/-/ /g')
+		O=$(echo $O | sed -e 's/A/-i/g')
+		O=$(echo $O | sed -e 's/B/-k/g')
+		O=$(echo $O | sed -e 's/C/-j/g')
+		echo "Executing type $P ($O)"
+		CMD="$AKRUN -s -n $NSIMU -- $SIMU $ARGS -n $NTASK $O"
+		echo $CMD
+		if [ -z "$DRY" ] ; then
+			do_simul "$CMD" >& $LOGDIR/$NTASK.$P.log
+		fi
+	done
 }
 
-for n in `seq 5 $1` ; do
+
+for d in "$LOGDIR" "$DATADIR" "$GRAPHDIR" ; do
+	if ! [ -d "$d" ] ; then
+		mkdir -p $d
+	fi
+done
+
+for n in `seq $START $END` ; do
 	exec_simul $n
+	process_results $n
 done
 

@@ -9,8 +9,8 @@ PARAMNAME="evaluated"
 function process_type {
 	PARAMNAME=$1
 	case $PARAMNAME in
-		"evaluated"	) PARAMLINE=3 ;;
-		"time"		) PARAMLINE=2 ;;
+		"evaluated"	) PARAMLINE=4 ;;
+		"time"		) PARAMLINE=3 ;;
 		*		) echo "Wrong type $1" && exit $E_OPTERROR ;;
 	esac
 }
