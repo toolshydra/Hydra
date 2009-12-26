@@ -1,5 +1,9 @@
 #!/bin/bash
 
+if [ -z "$GNUPLOT" ] ; then
+	GNUPLOT=gnuplot
+fi
+
 NO_ARGS=0
 E_OPTERROR=85
 
@@ -30,13 +34,13 @@ fi
 YRANGE="set yrange [0:$YMAX]"
 
 for i in $@ ; do
-gnuplot << EOF
+$GNUPLOT << EOF
 set term post "CMR10"
 set term jpeg
 set output "$i.jpg"
 set grid
 set xlabel "Applied prunings"
-set ylabel "Time (s)"
+set ylabel "Time (us)"
 set title "Computation time"
 set key outside bmargin
 set key box
@@ -48,7 +52,10 @@ set style histogram errorbars gap 2 lw 2
 set xtics nomirror rotate by -45
 set style fill pattern 2 border -1
 set boxwidth 0.75
-plot "$i" using 2:3:xticlabel(1)
+plot "$i" using 2:3:xticlabel(1) title "1"
+set style fill empty
+replot "$i" using 2:3:xticlabel(1) title "2"
+
 set output
 set terminal pop
 EOF

@@ -1,7 +1,11 @@
 #!/bin/bash
 
+if [ -z "$GNUPLOT" ] ; then
+	GNUPLOT=gnuplot
+fi
+
 for i in $@ ; do
-gnuplot << EOF
+$GNUPLOT << EOF
 set term post "CMR10"
 set term jpeg
 set output "$i.jpg"
