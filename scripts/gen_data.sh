@@ -20,6 +20,7 @@ NSIMU=8
 LOGDIR=$(pwd)/log
 DATADIR=$(pwd)/data
 GRAPHDIR=$(pwd)/graph
+PRUNINGS="- A B C A+B A+C B+C A+B+C"
 
 if [ $# -eq "$NO_ARGS" ]    # Script invoked with no command-line args?
 then
@@ -30,13 +31,14 @@ then
 fi
 
 
-while getopts "s:e:dn:" Option
+while getopts "s:e:dn:p:" Option
 do
   case $Option in
     s     ) START=$OPTARG ;;
     e     ) END=$OPTARG ;;
     n     ) NSIMU=$OPTARG ;;
     d     ) DRY=true ;;
+    p     ) PRUNINGS=$OPTARG ;;
     *     ) echo "Unimplemented option chosen." && exit $E_OPTERROR;;   # Default.
   esac
 done
@@ -84,7 +86,7 @@ function exec_simul {
 	NTASK=$1
 
 	echo "Generating simulation batch for $NTASK tasks"
-	for P in - A B C A+B A+C B+C A+B+C ; do
+	for P in $PRUNINGS ; do
 		O=$(echo $P | sed -e 's/+/ /g')
 		O=$(echo $O | sed -e 's/-/ /g')
 		O=$(echo $O | sed -e 's/A/-i/g')
