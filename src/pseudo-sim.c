@@ -205,7 +205,7 @@ static int gen_task_model(struct task_set *tset, int nresources)
 static long get_execution_time(struct results stat)
 {
 	struct timeval diff;
-	
+
 	timersub(&stat.e, &stat.s, &diff);
 
 	return diff.tv_sec * 1000000 + diff.tv_usec;
