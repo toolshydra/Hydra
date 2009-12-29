@@ -557,16 +557,45 @@ int enumeration_cleanup(struct task_set *tset, struct freq_set *freqs,
 	for (i = 0; i < tset->ntasks; i++) {
 		struct task *t = tset->tasks + i;
 
-		free(t->resources);
+		if (t->resources) {
+			free(t->resources);
+			t->resources = NULL;
+		}
 	}
-	free(tset->tasks);
-	free(limits);
-	free(ind);
 
-	free(freqs->frequencies);
-	free(done);
+	if (tset->tasks) {
+		free(tset->tasks);
+		tset->tasks = NULL;
+	}
 
-	free(stat->best_index);
-	free(res->resource_priorities);
+	if (limits) {
+		free(limits);
+		limits = NULL;
+	}
+
+	if (ind) {
+		free(ind);
+		ind = NULL;
+	}
+
+	if (freqs->frequencies) {
+		free(freqs->frequencies);
+		freqs->frequencies = NULL;
+	}
+
+	if (done) {
+		free(done);
+		done = NULL;
+	}
+
+	if (stat->best_index) {
+		free(stat->best_index);
+		stat->best_index = NULL;
+	}
+
+	if (res->resource_priorities) {
+		free(res->resource_priorities);
+		res->resource_priorities = NULL;
+	}
 }
 
