@@ -31,7 +31,7 @@ if [ -z "$YMAX" ] ; then
 	exit $E_OPTERROR
 fi
 
-YRANGE="set yrange [0:$YMAX]"
+YRANGE="set yrange [100:$YMAX]"
 
 for i in $@ ; do
 
@@ -52,11 +52,12 @@ set grid
 set xlabel "Applied prunings"
 set ylabel "Time (us)"
 set title "Computation time"
-set key outside bmargin
+#set key outside bmargin
 set key box
 $YRANGE
 
 #set format  y "%.2f"
+set logscale ycb
 set style data histogram
 set style histogram errorbars gap 2 lw 2
 set xtics nomirror rotate by -45

@@ -22,7 +22,7 @@ set grid
 set xlabel "Applied prunings"
 set ylabel "Evaluated / Total"
 set title "Number of evaluated configurations"
-set key outside bmargin
+#set key outside bmargin
 set key box
 set yrange [0:1.1]
 
