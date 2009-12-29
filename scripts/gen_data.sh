@@ -85,6 +85,10 @@ function do_simul {
 function exec_simul {
 	NTASK=$1
 
+	SEED=$(cat seed)
+	if ! [ -z $SEED ] ; then
+		SEED="-r $SEED"
+	fi
 	echo "Generating simulation batch for $NTASK tasks"
 	for P in $PRUNINGS ; do
 		O=$(echo $P | sed -e 's/+/ /g')
@@ -93,10 +97,16 @@ function exec_simul {
 		O=$(echo $O | sed -e 's/B/-k/g')
 		O=$(echo $O | sed -e 's/C/-j/g')
 		echo "Executing type $P ($O)"
-		CMD="$AKRUN -s -n $NSIMU -- $SIMU $ARGS -n $NTASK $O"
+		echo "Random: $SEED"
+		CMD="$AKRUN $SEED -s -n $NSIMU -- $SIMU $ARGS -n $NTASK $O"
 		echo $CMD
 		if [ -z "$DRY" ] ; then
 			do_simul "$CMD" >& $LOGDIR/$NTASK.$P.log
+			SEED=$(grep Random $LOGDIR/$NTASK.$P.log | awk '{ print $2 }')
+			if ! [ -z $SEED ] ; then
+				echo $SEED > seed
+				SEED="-r $SEED"
+			fi
 		fi
 	done
 }
