@@ -37,6 +37,7 @@ struct task_set {
 struct freq_set {
 	int nfrequencies;
 	double *frequencies;
+	double *voltages;
 };
 
 struct res_set {

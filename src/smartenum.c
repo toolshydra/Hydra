@@ -107,6 +107,12 @@ static int read_task_model(struct task_set *tset, struct freq_set *freqs,
 		return err;
 	}
 
+	err = read_array(freqs->nfrequencies, &freqs->voltages);
+	if (err < 0) {
+		printf("Could not read array of frequencies.\n");
+		return err;
+	}
+
 	do {
 		struct task *t = tset->tasks + i;
 
@@ -148,21 +154,37 @@ void print_summary(struct task_set tset, struct freq_set freqs,
 						diff.tv_usec);
 	if (stat.best < HUGE_VAL) {
 		double sys_utilization = 0;
+		double energy_a = 0;
+		double energy_b = 0;
+
 		printf("Melhor espalhamento %.2lf com as seguintes frequências\n",
 			stat.best);
 		for (i = 0; i < tset.ntasks; i++) {
-			double frequency;
+			double frequency, voltage_a, voltage_b;
 			double utilization;
 
 			frequency = freqs.frequencies[stat.best_index[i]];
-			printf("%.2lf ", freqs.frequencies[stat.best_index[i]]);
+			voltage_a = freqs.voltages[stat.best_index[i]];
+			voltage_b = freqs.voltages[0];
+			printf("(%.2lf; %.2lf) ", frequency, voltage_a);
 			utilization = (tset.tasks[i].wcec / frequency);
 			utilization /= tset.tasks[i].deadline;
 
 			sys_utilization += utilization;
+
+			energy_a += tset.tasks[i].wcec * (voltage_a * voltage_a);
+			energy_b += tset.tasks[i].wcec * (voltage_b * voltage_b);
 		}
+
 		printf("\nUtilização total do sistema é %6.2lf%\n",
 			sys_utilization * 100);
+		printf("Energia gasta pelo sistema é %6.2lf x C\n",
+			energy_a);
+		printf("Energia gasta pelo sistema é %6.2lf x C "
+			"se usar apenas a maior frequência\n",
+			energy_b);
+		printf("Redução de energia: %6.2lf%\n",
+			((energy_b - energy_a) / energy_b) * 100);
 	}
 }
 

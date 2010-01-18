@@ -558,6 +558,12 @@ int enumeration_init(struct task_set *tset, struct freq_set *freqs,
 		return -ENOMEM;
 	}
 
+	freqs->voltages = (double *)malloc(sizeof(double) * freqs->nfrequencies);
+	if (!freqs->voltages) {
+		printf("Could not allocate memory for array\n");
+		return -ENOMEM;
+	}
+
 	done = (int *)malloc(freqs->nfrequencies * sizeof(int));
 	if (!done) {
 		printf("Could not allocate memory for done array.\n");
@@ -601,6 +607,11 @@ int enumeration_cleanup(struct task_set *tset, struct freq_set *freqs,
 	if (freqs->frequencies) {
 		free(freqs->frequencies);
 		freqs->frequencies = NULL;
+	}
+
+	if (freqs->voltages) {
+		free(freqs->voltages);
+		freqs->voltages = NULL;
 	}
 
 	if (done) {
