@@ -56,14 +56,13 @@ static void print_usage(char *program_name)
  * @parameter a: array of floats, which will be filled with read values
  * @complexity: O(n)
  */
-static int read_array(int n, float **a)
+static int read_array(int n, double **a)
 {
 	int j = 0;
-	float *c;
+	double *c;
 
-	*a = malloc(sizeof(float) * n);
 
-	if (!a) {
+	if (!*a) {
 		printf("Could not allocate memory for array\n");
 		return -ENOMEM;
 	}
@@ -71,7 +70,7 @@ static int read_array(int n, float **a)
 	c = *a;
 
 	do {
-		scanf("%f", &c[j]);
+		scanf("%lf", &c[j]);
 	} while (++j < n);
 
 	return 0;
@@ -94,7 +93,6 @@ static int read_task_model(struct task_set *tset, struct freq_set *freqs,
 	int i = 0;
 	int err;
 
-	tset->tasks = malloc(tset->ntasks * sizeof(*tset->tasks));
 
 	if (!tset->tasks) {
 		printf("Could not allocate memory for %d tasks.\n",
@@ -112,7 +110,7 @@ static int read_task_model(struct task_set *tset, struct freq_set *freqs,
 	do {
 		struct task *t = tset->tasks + i;
 
-		scanf("%f %f %f", &t->wcec, &t->deadline, &t->Ij);
+		scanf("%lf %lf %lf", &t->wcec, &t->deadline, &t->Ij);
 
 		err = read_array(nresources, &t->resources); /* O(nres) */
 		if (err < 0) {
@@ -149,12 +147,12 @@ void print_summary(struct task_set tset, struct freq_set freqs,
 	printf("Tempo de processamento: %lds and %ld us\n", diff.tv_sec,
 						diff.tv_usec);
 	if (stat.best < HUGE_VAL) {
-		float sys_utilization = 0;
+		double sys_utilization = 0;
 		printf("Melhor espalhamento %.2lf com as seguintes frequências\n",
 			stat.best);
 		for (i = 0; i < tset.ntasks; i++) {
-			float frequency;
-			float utilization;
+			double frequency;
+			double utilization;
 
 			frequency = freqs.frequencies[stat.best_index[i]];
 			printf("%.2lf ", freqs.frequencies[stat.best_index[i]]);
@@ -181,7 +179,7 @@ void print_tabular(struct task_set tset, struct freq_set freqs,
 	int i;
 	struct timeval diff;
 
-	printf("%6.0f\t", pow(freqs.nfrequencies, tset.ntasks));
+	printf("%6.0lf\t", pow(freqs.nfrequencies, tset.ntasks));
 	printf("%6d\t", stat.total);
 	printf("%d\t", stat.success);
 
@@ -258,6 +256,10 @@ int main(int argc, char *argv[])
 	/* Read input data */
 	scanf("%d %d %d", &tset.ntasks, &freqs.nfrequencies, &res.nresources);
 
+	err = enumeration_init(&tset, &freqs, &stat, &res, &limits);
+	if (err < 0)
+		goto exit;
+
 	/* O(nfrequencies) + O(ntasks x nresources) */
 	err = read_task_model(&tset, &freqs, res.nresources);
 	if (err < 0) {
@@ -287,6 +289,8 @@ int main(int argc, char *argv[])
 	if (runtime.tabular)
 		print_tabular(tset, freqs, stat);
 
+	/* clean up procedure */
+	enumeration_cleanup(&tset, &freqs, &stat, &res, limits);
 exit:
 	return err;
 }
