@@ -139,31 +139,31 @@ void print_summary(struct task_set tset, struct freq_set freqs,
 	int i;
 	struct timeval diff;
 
-	printf("Summary\n");
-	printf("Number of Samples: %6.0f\n",
+	printf("Sumário\n");
+	printf("Número de Configurações: %6.0lf\n",
 				pow(freqs.nfrequencies, tset.ntasks));
-	printf("Number of Evaluated Samples: %6d\n", stat.total);
-	printf("Number of Feasible Samples: %d\n", stat.success);
+	printf("Configurações Avaliadas: %6d\n", stat.total);
+	printf("Configurações Viáveis: %d\n", stat.success);
 
 	timersub(&stat.e, &stat.s, &diff);
-	printf("Time of processing: %lds and %ld us\n", diff.tv_sec,
+	printf("Tempo de processamento: %lds and %ld us\n", diff.tv_sec,
 						diff.tv_usec);
 	if (stat.best < HUGE_VAL) {
 		float sys_utilization = 0;
-		printf("Best spread %.2f with following frequencies\n",
+		printf("Melhor espalhamento %.2lf com as seguintes frequências\n",
 			stat.best);
 		for (i = 0; i < tset.ntasks; i++) {
 			float frequency;
 			float utilization;
 
 			frequency = freqs.frequencies[stat.best_index[i]];
-			printf("%.2f ", freqs.frequencies[stat.best_index[i]]);
+			printf("%.2lf ", freqs.frequencies[stat.best_index[i]]);
 			utilization = (tset.tasks[i].wcec / frequency);
 			utilization /= tset.tasks[i].deadline;
 
 			sys_utilization += utilization;
 		}
-		printf("\nTotal System Utilization is %6.2f%\n",
+		printf("\nUtilização total do sistema é %6.2lf%\n",
 			sys_utilization * 100);
 	}
 }

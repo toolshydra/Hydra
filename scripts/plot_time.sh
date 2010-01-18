@@ -31,7 +31,7 @@ if [ -z "$YMAX" ] ; then
 	exit $E_OPTERROR
 fi
 
-YRANGE="set yrange [0:$YMAX]"
+YRANGE="set yrange [10:$YMAX]"
 
 for i in $@ ; do
 $GNUPLOT << EOF
@@ -39,22 +39,21 @@ set term post "CMR10"
 set term jpeg
 set output "$i.jpg"
 set grid
-set xlabel "Applied prunings"
-set ylabel "Time (us)"
-set title "Computation time"
-set key outside bmargin
-set key box
+set logscale ycb
+set xlabel "Podas Aplicadas"
+set ylabel "Tempo (us)"
+set title "Tempo de Computação"
+#set key outside bmargin
+#set key box
 $YRANGE
 
-set format  y "%.2f"
+#set format  y "%.2f"
 set style data histogram
 set style histogram errorbars gap 2 lw 2
 set xtics nomirror rotate by -45
 set style fill pattern 2 border -1
 set boxwidth 0.75
-plot "$i" using 2:3:xticlabel(1) title "1"
-set style fill empty
-replot "$i" using 2:3:xticlabel(1) title "2"
+plot "$i" using 2:3:xticlabel(1) title ""
 
 set output
 set terminal pop

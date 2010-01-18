@@ -26,37 +26,37 @@ static void print_task_model(struct task_set tset, struct res_set res)
 {
 	int i;
 
-	printf("\n**************\n");
-	printf("* Task Model *\n");
-	printf("**************\n");
-	printf("%02d tasks, %02d resources\n", tset.ntasks, res.nresources);
-	printf("Task\tPriority\tComputation\tDeadline\n");
+	printf("\n*********************\n");
+	printf("* Modelo de Tarefas *\n");
+	printf("*********************\n");
+	printf("%02d tarefas, %02d recursos\n", tset.ntasks, res.nresources);
+	printf("Tarefa        Prioridade        Computação        Meta\n");
 
 	for (i = 0; i < tset.ntasks; i++)
-		printf("T%d\t%d\t\t%.2lf\t\t%.2lf\n", i + 1, i,
+		printf("T%2d        %2d                %05.2lf                %05.2lf\n", i + 1, i,
 			tset.tasks[i].computation, tset.tasks[i].deadline);
 
-	printf("\n******************\n");
-	printf("* Resource Model *\n");
-	printf("******************\n");
-	printf("Task\t");
+	printf("\n**********************\n");
+	printf("* Recursos do Modelo *\n");
+	printf("**********************\n");
+	printf("Task        ");
 	for (i = 0; i < res.nresources; i++)
-		printf("R%d\t", i + 1);
+		printf("R%2d        ", i + 1);
 	printf("\n");
 
 	for (i = 0; i < tset.ntasks; i++) {
 		int j;
 
-		printf("T%d\t", i + 1);
+		printf("T%2d        ", i + 1);
 
 		for (j = 0; j < res.nresources; j++)
-			printf("%.2lf%%\t", tset.tasks[i].resources[j] * 100);
+			printf("%05.2lf%%        ", tset.tasks[i].resources[j] * 100);
 		printf("\n");
 
 	}
-	printf("Resource priorities\n");
+	printf("Prioridades dos recursos\n");
 	for (i = 0; i < res.nresources; i++)
-		printf("C(R%d) = %d\t", i + 1, res.resource_priorities[i]);
+		printf("C(R%2d) = %3d        ", i + 1, res.resource_priorities[i]);
 	printf("\n");
 
 }
@@ -70,15 +70,13 @@ static void print_task_influencies(struct task_set tset)
 {
 	int i;
 
-	printf("\n*************\n");
-	printf("* Influency *\n");
-	printf("*************\n");
-	printf("Task\tIp\tIb\tIj\tI\n");
+	printf("\n**************\n");
+	printf("* Influência *\n");
+	printf("**************\n");
+	printf("Tarefa        Bi        Ji        Ii\n");
 	for (i = 0; i < tset.ntasks; i++) {
-		double I = tset.tasks[i].Ip + tset.tasks[i].Ib +
-				tset.tasks[i].Ij;
-		printf("T%d\t%.2lf\t%.2lf\t%.2lf\t%.2lf\n", i + 1, tset.tasks[i].Ip,
-			tset.tasks[i].Ib, tset.tasks[i].Ij, I);
+		printf("T%2d        %05.2lf        %05.2lf        %05.2lf\n", i + 1,
+			tset.tasks[i].Ib, tset.tasks[i].Ij, tset.tasks[i].Ip);
 	}
 }
 
@@ -91,20 +89,20 @@ static void print_task_analysis(struct task_set tset)
 {
 	int i;
 
-	printf("\n************\n");
-	printf("* Analysis *\n");
-	printf("************\n");
-	printf("Task\tComputation\tI\t\tResponse\tDeadline\tK (D - I)"
-								"\tD - R\n");
+	printf("\n***********\n");
+	printf("* Análise *\n");
+	printf("***********\n");
+	printf("Tarefa        Computação        Ii                Ri        Pi        (Pi - Ii)"
+								"        (Pi - Ri)\n");
 
 	for (i = 0; i < tset.ntasks; i++)
-		printf("T%d\t%.2lf\t\t%.2lf\t\t%.2lf\t\t%.2lf\t\t%.2lf\t\t%.2lf\n",
+		printf("T%02d        %05.2lf                %05.2lf                %05.2lf                %05.2lf                %05.2lf                %05.2lf\n",
 			i + 1,
 			tset.tasks[i].computation,
-			0.0,
+			tset.tasks[i].Ip,
 			response(tset.tasks[i]),
 			tset.tasks[i].deadline,
-			0.0,
+			tset.tasks[i].deadline - tset.tasks[i].Ip,
 			tset.tasks[i].deadline - response(tset.tasks[i]));
 
 }
@@ -128,7 +126,7 @@ static int evaluate_sample_response(struct task_set tset,
 		for (i = 0; i < tset.ntasks; i++)
 			printf(" %6.2lf", tset.tasks[i].computation);
 
-		printf("\t[ ");
+		printf("   [ ");
 	}
 
 	ok = 1;
@@ -155,9 +153,9 @@ static int evaluate_sample_response(struct task_set tset,
 
 	if (runtime.list) {
 		if (ok)
-			printf("]\t%-4s %7.2lf", "OK", s);
+			printf("]   %-4s %7.2lf", "OK", s);
 		else
-			printf("]\t%-4s %7.2lf", "NOT", -1.0);
+			printf("]   %-4s %7.2lf", "NOT", -1.0);
 		printf("\n");
 	}
 

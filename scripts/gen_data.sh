@@ -63,7 +63,15 @@ function process_results {
 		pushd $LOGDIR && $SCRIPTS/process_data.sh -t "time" -n $N && popd
 		mv $LOGDIR/*dat $DATADIR
 		Y=$(head -n 1 $DATADIR/$N.time.dat | awk '{ print $2 }' | cut -d. -f 1)
-		Y=$(expr $Y \/ 100 \* 10 + $Y)
+		if ! [ -z "$(head -n 1 $DATADIR/$N.time.dat | awk '{ print $2 }' | grep +)" ] ; then
+			K=$(head -n 1 $DATADIR/$N.time.dat | awk '{ print $2 }' | cut -d+ -f 2)
+		fi
+		if ! [ -z "$K" ] ; then
+			for i in `seq $K` ; do
+				Y=$(expr $Y \* 10)
+			done
+		fi
+		Y=$(expr $Y \* 2 )
 		pushd $DATADIR && $SCRIPTS/plot_time.sh -y $Y $N.time.dat && popd
 		pushd $DATADIR && $SCRIPTS/plot_evaluated.sh $N.evaluated.dat && popd
 		mv $DATADIR/*jpg $GRAPHDIR
@@ -103,7 +111,7 @@ function exec_simul {
 		if [ -z "$DRY" ] ; then
 			do_simul "$CMD" >& $LOGDIR/$NTASK.$P.log
 			SEED=$(grep Random $LOGDIR/$NTASK.$P.log | awk '{ print $2 }')
-			if ! [ -z $SEED ] ; then
+			if ! [ -z "$SEED" ] ; then
 				echo $SEED > seed
 				SEED="-r $SEED"
 			fi

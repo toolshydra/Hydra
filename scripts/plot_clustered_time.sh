@@ -36,7 +36,7 @@ YRANGE="set yrange [100:$YMAX]"
 for i in $@ ; do
 
 PLOT="plot"
-for j in `seq 1 5` ; do
+for j in `seq 1 6` ; do
 	S=`expr 3 \* $j`
 	PLOT=$PLOT" \"$i\" using $S:$(expr $S + 1):xticlabel(1) title \" `expr $j + 3` tasks \","
 done
@@ -47,11 +47,12 @@ echo $PLOT
 $GNUPLOT << EOF
 set term post "CMR10"
 set term jpeg
+set decimalsign ','
 set output "$i.jpg"
 set grid
 set xlabel "Applied prunings"
 set ylabel "Time (us)"
-set title "Computation time"
+set title "Computation Time"
 #set key outside bmargin
 set key box
 $YRANGE
