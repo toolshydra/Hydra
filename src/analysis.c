@@ -223,25 +223,47 @@ static void compute_exclusion_influency(struct task_set tset,
  * @parameter tset: set of tasks
  * @complexity: O(ntasks ^ 2)
  */
+
+/* Usable AlmostEqual function */
+int almostequal2s_complement(double A, double B, long long maxulps)
+{
+    long long aint;
+    long long bint;
+    long long intdiff = abs(aint - bint);
+
+    /* Make aInt lexicographically ordered as a twos-complement int */
+    aint = *(long long *)&A;
+    if (aint < 0)
+        aint = 0x80000000 - aint;
+
+    /* Make bInt lexicographically ordered as a twos-complement int */
+    bint = *(long long*)&B;
+    if (bint < 0)
+        bint = 0x80000000 - bint;
+
+    intdiff = abs(aint - bint);
+    if (intdiff <= maxulps)
+        return 1;
+
+    return 0;
+}
+
 static void compute_precedence_influency(struct task_set tset)
 {
 	int i, j;
 	int success;
 	double Ip, Ipa;
-	int tries;
 
 	for (i = 0; i < tset.ntasks; i++) {
 		Ip = tset.tasks[i].computation + tset.tasks[i].Ib;
 		success = 0;
-		tries = 0;
-		while (!success && Ip <= tset.tasks[i].deadline &&
-							tries++ < NTRIES) {
+		while (!success && Ip <= tset.tasks[i].deadline) {
 			Ipa = Ip;
 			Ip = tset.tasks[i].computation + tset.tasks[i].Ib;
 			for (j = i - 1; j >= 0; j--)
 				Ip += precedence_influency(tset.tasks[j], Ipa);
 
-			if (Ip == Ipa)
+			if (almostequal2s_complement(Ip, Ipa, 1 << 22))
 				success = 1;
 		}
 		if (success)
