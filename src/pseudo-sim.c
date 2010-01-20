@@ -143,6 +143,15 @@ static int read_frequencies(char *freq_file_name, struct freq_set *freqs)
 	}
 
 	qsort(freqs->frequencies, freqs->nfrequencies, sizeof(double), compar);
+
+	/* O(nfrequencies) */
+	err = read_array(f, freqs->nfrequencies, &freqs->voltages);
+	if (err < 0) {
+		printf("Could not read array of voltages.\n");
+		return err;
+	}
+	qsort(freqs->voltages, freqs->nfrequencies, sizeof(double), compar);
+
 	fclose(f);
 
 	return err;
@@ -342,8 +351,11 @@ void leave(int sig) {
 		goto exit;
 
 	/* evaluated and time */
-	AkDeclareParameters(2);
+	AkDeclareParameters(4);
 	while (!AkSimulationOver()) {
+		double energy_b = 0;
+		double energy_a = 0;
+
 		/* O(nfrequencies) + O(ntasks x nresources) */
 		err = gen_task_model(&tset, res.nresources);
 		if (err < 0) {
@@ -372,7 +384,23 @@ void leave(int sig) {
 
 		AkParamObservation(1,
 				stat.total / pow(freqs.nfrequencies, tset.ntasks));
-		AkParamObservation(2, get_execution_time(stat));
+		AkParamObservation(2,
+				stat.success / pow(freqs.nfrequencies, tset.ntasks));
+		AkParamObservation(3, get_execution_time(stat));
+
+		for (i = 0; i < tset.ntasks; i++) {
+			double voltage_a, voltage_b;
+
+			voltage_a = freqs.voltages[stat.best_index[i]];
+			voltage_b = freqs.voltages[0];
+
+			energy_a += tset.tasks[i].wcec * (voltage_a * voltage_a);
+			energy_b += tset.tasks[i].wcec * (voltage_b * voltage_b);
+		}
+
+		if (stat.success > 0)
+			AkParamObservation(4, energy_a / energy_b);
+
 	}
 
 exit:
