@@ -336,8 +336,11 @@ static int start_drop(struct task_set tset, struct freq_set freqs,
 		} else {
 			f = m + 1;
 			start = m;
-			if (spread < stat->best)
+			if (spread < stat->best) {
 				stat->best = spread;
+				for (i = 0; i < tset.ntasks; i++)
+					stat->best_index[i] = ind[i];
+			}
 		}
 	}
 
@@ -481,7 +484,8 @@ int enumerate_samples(struct task_set tset, struct freq_set freqs,
 
 		if (pass && spread < stat->best) {
 			stat->best = spread;
-			memcpy(stat->best_index, ind, tset.ntasks);
+			for (i = 0; i < tset.ntasks; i++)
+				stat->best_index[i] = ind[i];
 		}
 
 		if (runtime.jump_samples && !pass) {
