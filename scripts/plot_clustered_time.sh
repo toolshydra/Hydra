@@ -38,23 +38,21 @@ for i in $@ ; do
 PLOT="plot"
 for j in `seq 1 6` ; do
 	S=`expr 3 \* $j`
-	PLOT=$PLOT" \"$i\" using $S:$(expr $S + 1):xticlabel(1) title \" `expr $j + 3` tasks \","
+	PLOT=$PLOT" \"$i\" using $S:$(expr $S + 1):xticlabel(1) title \" `expr $j + 3`\","
 done
 PLOT=${PLOT%,}
 echo $PLOT
 
-
-$GNUPLOT << EOF
-set term post "CMR10"
-set term jpeg
+GDFONTPATH=/usr/share/fonts/truetype/latex-xft-fonts/ $GNUPLOT << EOF
+set term jpeg truecolor nocrop enhanced font "cmr10" 18
 set decimalsign ','
 set output "$i.jpg"
 set grid
-set xlabel "Applied prunings"
-set ylabel "Time (us)"
-set title "Computation Time"
+set xlabel "Podas Aplicadas"
+set ylabel "Tempo (us)"
+set title "Tempo de Computação"
 #set key outside bmargin
-set key box
+set key box title "Quantidade\nde Tarefas"
 $YRANGE
 
 #set format  y "%.2f"
