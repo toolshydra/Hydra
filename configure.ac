@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT([smartenum], [0.1], [edubezval@gmail.com])
+AC_INIT([schedulability], [0.1], [eduardo.valentin@icomp.ufam.edu.br])
 AC_CONFIG_SRCDIR([src/smartenum.c])
 AC_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE([no-define])

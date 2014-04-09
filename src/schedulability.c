@@ -1,7 +1,7 @@
 /*
- * src/smartenum.c
+ * src/schedulability.c
  *
- * Copyright (C) 2008 Eduardo Valentin <edubezval@gmail.com>
+ * Copyright (C) 2008-2014 Eduardo Valentin <edubezval@gmail.com>
  *
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License version 2 as
