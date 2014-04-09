@@ -143,21 +143,21 @@ void print_summary(struct task_set tset, struct freq_set freqs,
 	int i;
 	struct timeval diff;
 
-	printf("Sumário\n");
-	printf("Número de Configurações: %6.0lf\n",
+	printf("Summary\n");
+	printf("Number of Configurations: %6.0lf\n",
 				pow(freqs.nfrequencies, tset.ntasks));
-	printf("Configurações Avaliadas: %6d\n", stat.total);
-	printf("Configurações Viáveis: %d\n", stat.success);
+	printf("Evaluated configurations: %6d\n", stat.total);
+	printf("Feasible configurations: %d\n", stat.success);
 
 	timersub(&stat.e, &stat.s, &diff);
-	printf("Tempo de processamento: %lds and %ld us\n", diff.tv_sec,
+	printf("Processing time: %lds and %ld us\n", diff.tv_sec,
 						diff.tv_usec);
 	if (stat.best < HUGE_VAL) {
 		double sys_utilization = 0;
 		double energy_a = 0;
 		double energy_b = 0;
 
-		printf("Melhor espalhamento %.2lf com as seguintes frequências\n",
+		printf("Best spreading %.2lf with the following frequencies\n",
 			stat.best);
 		for (i = 0; i < tset.ntasks; i++) {
 			double frequency, voltage_a, voltage_b;
@@ -176,14 +176,14 @@ void print_summary(struct task_set tset, struct freq_set freqs,
 			energy_b += tset.tasks[i].wcec * (voltage_b * voltage_b);
 		}
 
-		printf("\nUtilização total do sistema é %6.2lf%\n",
+		printf("\nSystem's total utilization is %6.2lf%\n",
 			sys_utilization * 100);
-		printf("Energia gasta pelo sistema é %6.2lf x C\n",
+		printf("System's required energy is %6.2lf x C\n",
 			energy_a);
-		printf("Energia gasta pelo sistema é %6.2lf x C "
-			"se usar apenas a maior frequência\n",
+		printf("The energy used by the system is %6.2lf x C "
+			"when only the highest frequency is used\n",
 			energy_b);
-		printf("Redução de energia: %6.2lf%\n",
+		printf("Energy consumption reduction: %6.2lf%\n",
 			((energy_b - energy_a) / energy_b) * 100);
 	}
 }
