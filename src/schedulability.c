@@ -150,7 +150,7 @@ void print_summary(struct task_set tset, struct freq_set freqs,
 	printf("Feasible configurations: %d\n", stat.success);
 
 	timersub(&stat.e, &stat.s, &diff);
-	printf("Processing time: %lds and %ld us\n", diff.tv_sec,
+	printf("Processing time: %lds and %d us\n", diff.tv_sec,
 						diff.tv_usec);
 	if (stat.best < HUGE_VAL) {
 		double sys_utilization = 0;
@@ -176,14 +176,14 @@ void print_summary(struct task_set tset, struct freq_set freqs,
 			energy_b += tset.tasks[i].wcec * (voltage_b * voltage_b);
 		}
 
-		printf("\nSystem's total utilization is %6.2lf%\n",
+		printf("\nSystem's total utilization is %6.2lf%%\n",
 			sys_utilization * 100);
 		printf("System's required energy is %6.2lf x C\n",
 			energy_a);
 		printf("The energy used by the system is %6.2lf x C "
 			"when only the highest frequency is used\n",
 			energy_b);
-		printf("Energy consumption reduction: %6.2lf%\n",
+		printf("Energy consumption reduction: %6.2lf%%\n",
 			((energy_b - energy_a) / energy_b) * 100);
 	}
 }
@@ -206,7 +206,7 @@ void print_tabular(struct task_set tset, struct freq_set freqs,
 	printf("%d\t", stat.success);
 
 	timersub(&stat.e, &stat.s, &diff);
-	printf("%ld.%06ld\n", diff.tv_sec, diff.tv_usec);
+	printf("%ld.%06d\n", diff.tv_sec, diff.tv_usec);
 }
 
 /*

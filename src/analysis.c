@@ -36,12 +36,12 @@ static void print_task_model(struct task_set tset, struct res_set res)
 		printf("T%2d        %2d                %05.2lf                %05.2lf\n", i + 1, i,
 			tset.tasks[i].computation, tset.tasks[i].deadline);
 
-	printf("\n**********************\n");
+	printf("\n**************************\n");
 	printf("* Resources in the Model *\n");
-	printf("**********************\n");
+	printf("**************************\n");
 	printf("Task        ");
 	for (i = 0; i < res.nresources; i++)
-		printf("R%2d        ", i + 1);
+		printf("R%2d           ", i + 1);
 	printf("\n");
 
 	for (i = 0; i < tset.ntasks; i++) {
@@ -73,7 +73,7 @@ static void print_task_influencies(struct task_set tset)
 	printf("\n*************\n");
 	printf("* Influence *\n");
 	printf("*************\n");
-	printf("Task        Bi        Ji        Ii\n");
+	printf("Task          Bi           Ji           Ii\n");
 	for (i = 0; i < tset.ntasks; i++) {
 		printf("T%2d        %05.2lf        %05.2lf        %05.2lf\n", i + 1,
 			tset.tasks[i].Ib, tset.tasks[i].Ij, tset.tasks[i].Ip);
@@ -92,8 +92,8 @@ static void print_task_analysis(struct task_set tset)
 	printf("\n************\n");
 	printf("* Analysis *\n");
 	printf("************\n");
-	printf("Tarefa        Computação        Ii                Ri        Pi        (Pi - Ii)"
-								"        (Pi - Ri)\n");
+	printf("Task     Computation               Ii                   Ri                   Pi              (Pi - Ii)"
+								"            (Pi - Ri)\n");
 
 	for (i = 0; i < tset.ntasks; i++)
 		printf("T%02d        %05.2lf                %05.2lf                %05.2lf                %05.2lf                %05.2lf                %05.2lf\n",
@@ -324,7 +324,7 @@ static int start_drop(struct task_set tset, struct freq_set freqs,
 		}
 		done[m] = 1;
 		if (runtime.list)
-			printf("%03d -", stat->total, m);
+			printf("%03d -", stat->total);
 
 		compute_sample_analysis(tset, res, runtime);
 		pass = evaluate_sample_response(tset, runtime, &spread);
