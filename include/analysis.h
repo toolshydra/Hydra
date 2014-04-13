@@ -11,6 +11,13 @@
 #ifndef ANALYSIS_H
 #define ANALYSIS_H
 
+#include <list>
+#include <ilcplex/ilocplex.h>
+ILOSTLBEGIN
+
+#include <string>
+#include <vector>
+
 #define NTRIES	1000
 /* Task data */
 struct task {
@@ -20,7 +27,14 @@ struct task {
 	double Ip;
 	double Ib;
 	double Ij;
-	double *resources;
+	IloNumArray resources;
+};
+
+/* Runtime data */
+struct runInfo {
+	bool summary:1;			/* print a summary in the end */
+	bool verbose:1;			/* verbose execution */
+	bool list:1;			/* list samples */
 };
 
 #define	task_res_use(t, i)		(t.resources[i] * t.computation)
@@ -28,57 +42,40 @@ struct task {
 							t.computation)
 #define response(t)			(t.Ip + t.Ij)
 
-/* Sets */
-struct task_set {
-	int ntasks;
-	struct task *tasks;
+class SchedulabilityAnalysis {
+/* input data */
+private:
+	bool loaded;
+
+	vector <struct task> tasks;
+
+	IloNumArray2 frequencies;
+	IloNumArray2 voltages;
+
+	IloNumArray resourcePriorities;
+
+	runInfo runConfig;
+	string fileModel;
+
+
+	void computeResourcePriorities();
+	void computeExclusionInfluency();
+	void computePrecedenceInfluency();
+public:
+	/* Constructors */
+	SchedulabilityAnalysis(runInfo runtime);
+	SchedulabilityAnalysis(runInfo runtime, string filename);
+
+	/* Schedulability Analysis */
+	void computeAnalysis();
+	int evaluateResponse(double *spread);
+	void evaluateUtilization();
+
+	/* IO */
+	void readModel();
+	void printTaskModel();
+	void printTaskInfluencies();
+	void printTaskAnalysis();
 };
 
-struct freq_set {
-	int nfrequencies;
-	double *frequencies;
-	double *voltages;
-};
-
-struct res_set {
-	int nresources;
-	int *resource_priorities;
-};
-
-/* Runtime data */
-struct run_info {
-	int summary:1;			/* print a summary in the end */
-	int tabular:1;			/* print a summary in one line */
-	int verbose:1;			/* verbose execution */
-	int list:1;			/* list samples */
-	int best_start:1;		/* comput best start point */
-	int jump_samples:1;		/* jump useless samples */
-	int best_initial_limits:1;	/* compute best initial freq limits */
-};
-
-/* Results */
-struct results {
-	struct timeval s;
-	struct timeval e;
-	int success;
-	int total;
-	double best;
-	int *best_index;
-};
-
-int compute_initial_limits(struct task_set tset, struct freq_set freqs,
-				struct run_info runtime, int **start_limits);
-void compute_sample_analysis(struct task_set tset, struct res_set *res,
-				struct run_info runtime);
-int enumerate_samples(struct task_set tset, struct freq_set freqs,
-			struct res_set *res, int *limits,
-			struct run_info runtime, struct results *stat);
-int enumeration_init(struct task_set *tset, struct freq_set *freqs,
-			struct results *stat,
-			struct res_set *res,
-			int **limits);
-int enumeration_cleanup(struct task_set *tset, struct freq_set *freqs,
-			struct results *stat,
-			struct res_set *res,
-			int *limits);
 #endif
