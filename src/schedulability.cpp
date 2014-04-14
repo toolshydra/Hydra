@@ -107,7 +107,7 @@ static void print_summary(SchedulabilityAnalysis sched)
 int main(int argc, char *argv[])
 {
 	IloEnv env;
-	string filename = "model.txt";
+	const char *filename = "model.txt";
 	runInfo runtime;
 	int next_option;
 	int err = 0;
@@ -143,7 +143,8 @@ int main(int argc, char *argv[])
 		}
 	} while (next_option != -1);
 
-	SchedulabilityAnalysis sched(runtime, filename);
+	SchedulabilityAnalysis sched(env, runtime, filename);
+	sched.computeAnalysis();
 
 	/* Compute output data */
 

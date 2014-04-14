@@ -18,23 +18,27 @@
 #include <string>
 
 /* Constructors */
-SchedulabilityAnalysis::SchedulabilityAnalysis(runInfo runtime)
+SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime)
+	:frequencies(env), voltages(env), resourcePriorities(env)
 {
 	runConfig = runtime;
 	if (runConfig.getVerbose())
 		cout << runConfig;
 
 	fileModel = "model.txt";
+	loaded = false;
 	readModel();
 }
 
-SchedulabilityAnalysis::SchedulabilityAnalysis(runInfo runtime, string filename)
+SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime, const char *filename)
+	:frequencies(env), voltages(env), resourcePriorities(env)
 {
 	runConfig = runtime;
 	if (runConfig.getVerbose())
 		cout << runConfig;
 
 	fileModel = filename;
+	loaded = false;
 	readModel();
 }
 
@@ -42,53 +46,37 @@ SchedulabilityAnalysis::SchedulabilityAnalysis(runInfo runtime, string filename)
 /* Reads task model, architecture model and power model */
 void SchedulabilityAnalysis::readModel()
 {
-	if (fileModel.size() == 0)
+	int ntasks, nresources, i;
+
+	if (!fileModel)
 		return;
 
-	/**/
-#if 0
+	ifstream file(fileModel);
 
-	int i = 0;
-	int err;
+	if (!file) {
+		cerr << "ERROR: could not open file '" << fileModel
+			<< "' for reading" << endl;
 
-
-	if (!tset->tasks) {
-		printf("Could not allocate memory for %d tasks.\n",
-							tset->ntasks);
-		return -ENOMEM;
+		throw(-1);
 	}
 
-	/* O(nfrequencies) */
-	/* Read array of frequencies */
-//	err = read_array(freqs->nfrequencies, &freqs->frequencies);
-	if (err < 0) {
-		printf("Could not read array of frequencies.\n");
-		return err;
-	}
+	file >> ntasks >> nresources;
+	file >> frequencies;
+	file >> voltages;
 
-	/* Read array of frequencies */
-//	err = read_array(freqs->nfrequencies, &freqs->voltages);
-	if (err < 0) {
-		printf("Could not read array of frequencies.\n");
-		return err;
-	}
-
+	i = 0;
 	do {
-		struct task *t = tset->tasks + i;
+		class Task t(frequencies.getEnv());
 
-		scanf("%lf %lf %lf", &t->wcec, &t->deadline, &t->Ij);
+		file >> t;
 
-		/* Read array of resource usages */
-//		err = read_array(nresources, &t->resources); /* O(nres) */
-		if (err < 0) {
-			printf("Could not read array of resources for task"
-				" %d.\n", i);
-			return err;
-		}
+		tasks.push_back(t);
+	} while (++i < ntasks);
 
-	} while (++i < tset->ntasks);
+	for (i = 0; i < nresources; i++)
+		resourcePriorities.add(-1.0);
 
-#endif
+	loaded = true;
 }
 
 /*
@@ -107,7 +95,7 @@ int SchedulabilityAnalysis::evaluateResponse(double *spread)
 
 	if (runConfig.getList()) {
 		for (i = 0; i < tasks.size(); i++)
-			cout << " " << std::setw(8) << std::setprecision(2) << tasks[i].computation;
+			cout << " " << std::setw(8) << std::setprecision(2) << tasks[i].getComputation();
 
 		cout << "   [ ";
 	}
@@ -115,7 +103,7 @@ int SchedulabilityAnalysis::evaluateResponse(double *spread)
 	ok = 1;
 	for (i = 0; i < tasks.size(); i++) {
 		double dx;
-		if (tasks[i].deadline < response(tasks[i]) || (tasks[i].Ip < 0)) {
+		if (tasks[i].getDeadline() < tasks[i].getResponse() || (tasks[i].getIp() < 0)) {
 			di = '<';
 			de = '>';
 			ok = 0;
@@ -123,7 +111,7 @@ int SchedulabilityAnalysis::evaluateResponse(double *spread)
 		} else {
 			di = ' ';
 			de = ' ';
-			dx = tasks[i].deadline - response(tasks[i]);
+			dx = tasks[i].getDeadline() - tasks[i].getResponse();
 		}
 
 		sprintf(f, "%7.2lf", dx);
@@ -164,7 +152,7 @@ void SchedulabilityAnalysis::computeResourcePriorities()
 
 	for (i = 0; i < p->getSize(); i++) {
 		for (j = 0; j < tasks.size(); j++) {
-			if (tasks[j].resources[i] > 0.0) {
+			if (tasks[j].getResource(i) > 0.0) {
 				(*p)[i] = j;
 				break;
 			}
@@ -183,12 +171,12 @@ void SchedulabilityAnalysis::computeExclusionInfluency()
 	int i, j, k;
 
 	for (i = 0; i < tasks.size(); i++) {
-		tasks[i].Ib = 0;
+		tasks[i].setIb(0.0);
 		for (k = i + 1; k < tasks.size(); k++) {
 			for (j = 0; j < resourcePriorities.getSize(); j++) {
 				/* If we have high priority */
-				if (resourcePriorities[j] <= i && task_res_use(tasks[k], j) > tasks[i].Ib)
-					tasks[i].Ib = task_res_use(tasks[k], j);
+				if (resourcePriorities[j] <= i && tasks[k].getResourceUsage(j) > tasks[i].getIb())
+					tasks[i].setIb(tasks[k].getResourceUsage(j));
 			}
 		}
 	}
@@ -232,21 +220,21 @@ void SchedulabilityAnalysis::computePrecedenceInfluency()
 	double Ip, Ipa;
 
 	for (i = 0; i < tasks.size(); i++) {
-		Ip = tasks[i].computation + tasks[i].Ib;
+		Ip = tasks[i].getComputation() + tasks[i].getIb();
 		success = 0;
-		while (!success && Ip <= tasks[i].deadline) {
+		while (!success && Ip <= tasks[i].getDeadline()) {
 			Ipa = Ip;
-			Ip = tasks[i].computation + tasks[i].Ib;
+			Ip = tasks[i].getComputation() + tasks[i].getIb();
 			for (j = i - 1; j >= 0; j--)
-				Ip += precedence_influency(tasks[j], Ipa);
+				Ip += tasks[j].getPrecedenceInfluence(Ipa);
 
 			if (almostequal2s_complement(Ip, Ipa, 1 << 22))
 				success = 1;
 		}
 		if (success)
-			tasks[i].Ip = Ip;
+			tasks[i].setIp(Ip);
 		else
-			tasks[i].Ip = -1;
+			tasks[i].setIp(-1.0);
 	}
 }
 
@@ -259,6 +247,8 @@ void SchedulabilityAnalysis::computePrecedenceInfluency()
  */
 void SchedulabilityAnalysis::computeAnalysis()
 {
+	if (!loaded)
+		return;
 
 	/* O(ntasks x nresources) */
 	computeResourcePriorities();
@@ -298,23 +288,20 @@ void SchedulabilityAnalysis::printTaskModel()
 	cout << "**************" << endl;
 	cout << std::setw(2) << nTasks << " tasks " <<
 		std::setw(2) << nResources << " resources" << endl;
-	cout << "Task        Priority        Computation        Deadline" <<
+	cout << "Task       Priority                Computation            Deadline              WCEC" <<
 		endl;
 
 	for (i = 0; i < nTasks; i++)
 		cout << "T" << std::setw(2) << i + 1 <<
-			"       " << std::setw(2) << i <<
-			"                " << std::setw(8) << std::setprecision(2) << tasks[i].computation <<
-			"                " << std::setw(8) << std::setprecision(2) << tasks[i].deadline <<
-			endl;
+			"       " << std::setw(2) << i << tasks[i] << endl;
 
 	cout << endl;
 	cout << "**************************" << endl;
 	cout << "* Resources in the Model *" << endl;
 	cout << "**************************" << endl;
-	cout << "Task        ";
+	cout << "Task             ";
 	for (i = 0; i < nResources; i++)
-		cout << "R" << std::setw(2) << i + 1 << "           ";
+		cout << "R" << std::setw(2) << i + 1 << "               ";
 	cout << endl;
 
 	for (i = 0; i < nTasks; i++) {
@@ -324,7 +311,7 @@ void SchedulabilityAnalysis::printTaskModel()
 
 		for (j = 0; j < nResources; j++)
 			cout << std::setw(8) << std::setprecision(2) <<
-				tasks[i].resources[j] * 100 <<"%%        ";
+				tasks[i].getResource(j) * 100 <<"%         ";
 		cout << endl;
 
 	}
@@ -349,12 +336,12 @@ void SchedulabilityAnalysis::printTaskInfluencies()
 	cout << "*************" << endl;
 	cout << "* Influence *" << endl;
 	cout << "*************" << endl;
-	cout << "Task          Bi           Ji           Ii" << endl;
+	cout << "Task              Bi              Ji              Ii" << endl;
 	for (i = 0; i < tasks.size(); i++) {
 		cout << "T" << std::setw(2) << i + 1 <<
-			"        " << std::setw(8) << std::setprecision(2) << tasks[i].Ib <<
-			"        " << std::setw(8) << std::setprecision(2) << tasks[i].Ij <<
-			"        " << std::setw(8) << std::setprecision(2) << tasks[i].Ip <<
+			"        " << std::setw(8) << std::setprecision(2) << tasks[i].getIb() <<
+			"        " << std::setw(8) << std::setprecision(2) << tasks[i].getIj() <<
+			"        " << std::setw(8) << std::setprecision(2) << tasks[i].getIp() <<
 			endl;
 	}
 }
@@ -372,17 +359,21 @@ void SchedulabilityAnalysis::printTaskAnalysis()
 	cout << "************" << endl;
 	cout << "* Analysis *" << endl;
 	cout << "************" << endl;
-	cout << "Task     Computation               Ii                   "
-		"Ri                   Pi              (Pi - Ii)            "
+	cout << "Task     Computation                     Ii                      "
+		"Ri                      Pi                  (Pi - Ii)               "
 		"(Pi - Ri)" << endl;
 
 	for (i = 0; i < tasks.size(); i++)
 		cout << "T" << std::setw(2) << i + 1 <<
-			"        " << std::setw(8) << std::setprecision(2) << tasks[i].computation <<
-			"                " << std::setw(8) << std::setprecision(2) << tasks[i].Ip <<
-			"                " << std::setw(8) << std::setprecision(2) << response(tasks[i]) <<
-			"                " << std::setw(8) << std::setprecision(2) << tasks[i].deadline <<
-			"                " << std::setw(8) << std::setprecision(2) << tasks[i].deadline - tasks[i].Ip <<
-			"                " << std::setw(8) << std::setprecision(2) << tasks[i].deadline - response(tasks[i]) <<
+			"        " << std::setw(8) << std::setprecision(2) << tasks[i].getComputation() <<
+			"                " << std::setw(8) << std::setprecision(2) << tasks[i].getIp() <<
+			"                " << std::setw(8) << std::setprecision(2) <<
+							tasks[i].getResponse() <<
+			"                " << std::setw(8) << std::setprecision(2) <<
+							tasks[i].getDeadline() <<
+			"                " << std::setw(8) << std::setprecision(2) <<
+							tasks[i].getDeadline() - tasks[i].getIp() <<
+			"                " << std::setw(8) << std::setprecision(2) <<
+							tasks[i].getDeadline() - tasks[i].getResponse() <<
 			endl;
 }

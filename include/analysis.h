@@ -12,36 +12,20 @@
 #define ANALYSIS_H
 
 #include <list>
-#include <string>
 #include <vector>
 #include <ilcplex/ilocplex.h>
 ILOSTLBEGIN
 
 #include <runinfo.h>
+#include <task.h>
 
 #define NTRIES	1000
-/* Task data */
-struct task {
-	double deadline;
-	double wcec;
-	double computation;
-	double Ip;
-	double Ib;
-	double Ij;
-	IloNumArray resources;
-};
-
-#define	task_res_use(t, i)		(t.resources[i] * t.computation)
-#define precedence_influency(t, w)	(ceil((w + t.Ij) / t.deadline) * \
-							t.computation)
-#define response(t)			(t.Ip + t.Ij)
-
 class SchedulabilityAnalysis {
 /* input data */
 private:
 	bool loaded;
 
-	vector <struct task> tasks;
+	vector <class Task> tasks;
 
 	IloNumArray2 frequencies;
 	IloNumArray2 voltages;
@@ -49,7 +33,7 @@ private:
 	IloNumArray resourcePriorities;
 
 	runInfo runConfig;
-	string fileModel;
+	const char *fileModel;
 
 
 	void computeResourcePriorities();
@@ -57,8 +41,8 @@ private:
 	void computePrecedenceInfluency();
 public:
 	/* Constructors */
-	SchedulabilityAnalysis(runInfo runtime);
-	SchedulabilityAnalysis(runInfo runtime, string filename);
+	SchedulabilityAnalysis(IloEnv env, runInfo runtime);
+	SchedulabilityAnalysis(IloEnv env, runInfo runtime, const char *filename);
 
 	/* Schedulability Analysis */
 	void computeAnalysis();
