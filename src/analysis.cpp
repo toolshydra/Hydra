@@ -95,7 +95,7 @@ int SchedulabilityAnalysis::evaluateResponse(double *spread)
 
 	if (runConfig.getList()) {
 		for (i = 0; i < tasks.size(); i++)
-			cout << " " << std::setw(8) << std::setprecision(2) << tasks[i].getComputation();
+			cout << " " << std::fixed << std::setw(8) << std::setprecision(2) << tasks[i].getComputation();
 
 		cout << "   [ ";
 	}
@@ -123,9 +123,9 @@ int SchedulabilityAnalysis::evaluateResponse(double *spread)
 
 	if (runConfig.getList()) {
 		if (ok)
-			cout << "]   " << std::setw(-4) << "OK" << " " <<  std::setw(8) << std::setprecision(2) << s;
+			cout << "]   " << std::setw(-4) << "OK" << " " <<  std::fixed << std::setw(8) << std::setprecision(2) << s;
 		else
-			cout << "]   " << std::setw(-4) << "NOT" << " " <<  std::setw(8) << std::setprecision(2) << -1.0;
+			cout << "]   " << std::setw(-4) << "NOT" << " " <<  std::fixed << std::setw(8) << std::setprecision(2) << -1.0;
 		cout << endl;
 	}
 
@@ -288,7 +288,7 @@ void SchedulabilityAnalysis::printTaskModel()
 	cout << "**************" << endl;
 	cout << std::setw(2) << nTasks << " tasks " <<
 		std::setw(2) << nResources << " resources" << endl;
-	cout << "Task       Priority                Computation            Deadline              WCEC" <<
+	cout << "Task       Priority          Computation            Deadline                    WCEC" <<
 		endl;
 
 	for (i = 0; i < nTasks; i++)
@@ -310,7 +310,7 @@ void SchedulabilityAnalysis::printTaskModel()
 		cout << "T" << std::setw(2) << i + 1 << "        ";
 
 		for (j = 0; j < nResources; j++)
-			cout << std::setw(8) << std::setprecision(2) <<
+			cout << std::fixed << std::setw(8) << std::setprecision(2) <<
 				tasks[i].getResource(j) * 100 <<"%         ";
 		cout << endl;
 
@@ -336,12 +336,12 @@ void SchedulabilityAnalysis::printTaskInfluencies()
 	cout << "*************" << endl;
 	cout << "* Influence *" << endl;
 	cout << "*************" << endl;
-	cout << "Task              Bi              Ji              Ii" << endl;
+	cout << "Task             Bi              Ji              Ii" << endl;
 	for (i = 0; i < tasks.size(); i++) {
 		cout << "T" << std::setw(2) << i + 1 <<
-			"        " << std::setw(8) << std::setprecision(2) << tasks[i].getIb() <<
-			"        " << std::setw(8) << std::setprecision(2) << tasks[i].getIj() <<
-			"        " << std::setw(8) << std::setprecision(2) << tasks[i].getIp() <<
+			"        " << std::fixed << std::setw(8) << std::setprecision(2) << tasks[i].getIb() <<
+			"        " << std::fixed << std::setw(8) << std::setprecision(2) << tasks[i].getIj() <<
+			"        " << std::fixed << std::setw(8) << std::setprecision(2) << tasks[i].getIp() <<
 			endl;
 	}
 }
@@ -365,15 +365,15 @@ void SchedulabilityAnalysis::printTaskAnalysis()
 
 	for (i = 0; i < tasks.size(); i++)
 		cout << "T" << std::setw(2) << i + 1 <<
-			"        " << std::setw(8) << std::setprecision(2) << tasks[i].getComputation() <<
-			"                " << std::setw(8) << std::setprecision(2) << tasks[i].getIp() <<
-			"                " << std::setw(8) << std::setprecision(2) <<
+			"        " << std::fixed << std::setw(8) << std::setprecision(2) << tasks[i].getComputation() <<
+			"                " << std::fixed << std::setw(8) << std::setprecision(2) << tasks[i].getIp() <<
+			"                " << std::fixed << std::setw(8) << std::setprecision(2) <<
 							tasks[i].getResponse() <<
-			"                " << std::setw(8) << std::setprecision(2) <<
+			"                " << std::fixed << std::setw(8) << std::setprecision(2) <<
 							tasks[i].getDeadline() <<
-			"                " << std::setw(8) << std::setprecision(2) <<
+			"                " << std::fixed << std::setw(8) << std::setprecision(2) <<
 							tasks[i].getDeadline() - tasks[i].getIp() <<
-			"                " << std::setw(8) << std::setprecision(2) <<
+			"                " << std::fixed << std::setw(8) << std::setprecision(2) <<
 							tasks[i].getDeadline() - tasks[i].getResponse() <<
 			endl;
 }
