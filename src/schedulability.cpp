@@ -21,7 +21,7 @@ ILOSTLBEGIN
 
 #include <analysis.h>
 
-static const char *short_options = "hvstlm";
+static const char *short_options = "hvstlm:";
 static const struct option long_options[] = {
 	{ "help",     0, NULL, 'h' },
 	{ "verbose",  0, NULL, 'v' },
@@ -38,7 +38,8 @@ static void print_usage(char *program_name)
 	"  -h  --help                        Display this usage information." << endl<< 
 	"  -v  --verbose                     Print verbose messages." << endl <<
 	"  -s  --summary                     Print overall total numbers." << endl <<
-	"  -l  --list-samples                list each sample summary analysis." << endl;
+	"  -l  --list-samples                list each sample summary analysis." << endl <<
+	"  -m  --model-file                  Specify where to read the model." << endl;
 }
 
 /*
@@ -106,12 +107,10 @@ static void print_summary(SchedulabilityAnalysis sched)
 int main(int argc, char *argv[])
 {
 	IloEnv env;
-	string filename;
+	string filename = "model.txt";
 	runInfo runtime;
 	int next_option;
 	int err = 0;
-
-	memset(&runtime, 0, sizeof(runtime));
 
 	/* Read command line options */
 	do {
@@ -125,13 +124,13 @@ int main(int argc, char *argv[])
 			print_usage(argv[0]);
 			return 0;
 		case 'v':   /* -v or --verbose */
-			runtime.verbose = 1;
+			runtime.setVerbose(true);
 			break;
 		case 's':   /* -s or --summary */
-			runtime.summary = 1;
+			runtime.setSummary(true);
 			break;
 		case 'l':   /* -l or --list-samples */
-			runtime.list = 1;
+			runtime.setList(true);
 			break;
 		case 'm':   /* -m or --model-file */
 			if (!optarg) {
@@ -148,7 +147,7 @@ int main(int argc, char *argv[])
 
 	/* Compute output data */
 
-	if (runtime.summary)
+	if (runtime.getSummary())
 		print_summary(sched);
 
 	return err;

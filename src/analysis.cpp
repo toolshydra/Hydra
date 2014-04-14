@@ -21,6 +21,9 @@
 SchedulabilityAnalysis::SchedulabilityAnalysis(runInfo runtime)
 {
 	runConfig = runtime;
+	if (runConfig.getVerbose())
+		cout << runConfig;
+
 	fileModel = "model.txt";
 	readModel();
 }
@@ -28,6 +31,9 @@ SchedulabilityAnalysis::SchedulabilityAnalysis(runInfo runtime)
 SchedulabilityAnalysis::SchedulabilityAnalysis(runInfo runtime, string filename)
 {
 	runConfig = runtime;
+	if (runConfig.getVerbose())
+		cout << runConfig;
+
 	fileModel = filename;
 	readModel();
 }
@@ -99,7 +105,7 @@ int SchedulabilityAnalysis::evaluateResponse(double *spread)
 	char di, de;
 	double s = 0;
 
-	if (runConfig.list) {
+	if (runConfig.getList()) {
 		for (i = 0; i < tasks.size(); i++)
 			cout << " " << std::setw(8) << std::setprecision(2) << tasks[i].computation;
 
@@ -121,13 +127,13 @@ int SchedulabilityAnalysis::evaluateResponse(double *spread)
 		}
 
 		sprintf(f, "%7.2lf", dx);
-		if (runConfig.list)
+		if (runConfig.getList())
 			cout << di << std::setw(7) << f << de << " ";
 
 		s += dx;
 	}
 
-	if (runConfig.list) {
+	if (runConfig.getList()) {
 		if (ok)
 			cout << "]   " << std::setw(-4) << "OK" << " " <<  std::setw(8) << std::setprecision(2) << s;
 		else
@@ -256,7 +262,7 @@ void SchedulabilityAnalysis::computeAnalysis()
 
 	/* O(ntasks x nresources) */
 	computeResourcePriorities();
-	if (runConfig.verbose)
+	if (runConfig.getVerbose())
 		/* O(ntasks) + 2xO(nresources) + O(ntasks x nresources) */
 		printTaskModel();
 
@@ -265,7 +271,7 @@ void SchedulabilityAnalysis::computeAnalysis()
 	/* O(ntasks ^ 2) */
 	computePrecedenceInfluency();
 
-	if (runConfig.verbose) {
+	if (runConfig.getVerbose()) {
 		/* O(ntasks) */
 		printTaskInfluencies();
 

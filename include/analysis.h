@@ -12,11 +12,12 @@
 #define ANALYSIS_H
 
 #include <list>
+#include <string>
+#include <vector>
 #include <ilcplex/ilocplex.h>
 ILOSTLBEGIN
 
-#include <string>
-#include <vector>
+#include <runinfo.h>
 
 #define NTRIES	1000
 /* Task data */
@@ -28,13 +29,6 @@ struct task {
 	double Ib;
 	double Ij;
 	IloNumArray resources;
-};
-
-/* Runtime data */
-struct runInfo {
-	bool summary:1;			/* print a summary in the end */
-	bool verbose:1;			/* verbose execution */
-	bool list:1;			/* list samples */
 };
 
 #define	task_res_use(t, i)		(t.resources[i] * t.computation)
