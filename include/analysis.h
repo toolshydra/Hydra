@@ -23,6 +23,12 @@ ILOSTLBEGIN
 class SchedulabilityAnalysis {
 /* input data */
 private:
+	int nClusters;
+	int nProcessors;
+	int nTasks;
+	int nFrequencies;
+	int nResources;
+
 	bool loaded;
 
 	vector <class Task> tasks;
@@ -30,12 +36,15 @@ private:
 	IloNumArray2 frequencies;
 	IloNumArray2 voltages;
 
+	IloNumArray4 assignment;
+
 	IloNumArray resourcePriorities;
 
 	runInfo runConfig;
 	const char *fileModel;
 
 
+	void distributeTaskFrequencies();
 	void computeResourcePriorities();
 	void computeExclusionInfluency();
 	void computePrecedenceInfluency();

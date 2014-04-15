@@ -22,6 +22,7 @@ using namespace std;
 /* Task data */
 class Task {
 private:
+	int priority;
 	double deadline;
 	double wcec;
 	double computation;
@@ -42,9 +43,9 @@ public:
 	{
 		this->wcec = wcec;
 	}
-	void setComputation(double computation)
+	void setComputation(double frequency)
 	{
-		this->computation = computation;
+		this->computation = this->wcec / frequency;
 	}
 	void setIp(double Ip)
 	{
@@ -57,6 +58,10 @@ public:
 	void setIj(double Ij)
 	{
 		this->Ij = Ij;
+	}
+	int getPriority(void)
+	{
+		return priority;
 	}
 	double getDeadline(void)
 	{
@@ -100,13 +105,15 @@ public:
 	}
 
 	friend ostream& operator <<(ostream &os, const Task &task) {
-		os << "                " << std::fixed << std::setw(8) << std::setprecision(2) << task.computation <<
+		os << "       " << std::setw(2)  << task.priority << 
+
+			"                " << std::fixed << std::setw(8) << std::setprecision(2) << task.computation <<
 			"                " << std::fixed << std::setw(8) << std::setprecision(2) << task.deadline <<
 			"                " << std::fixed << std::setw(8) << std::setprecision(2) << task.wcec;
 		return os;
 	};
 	friend istream& operator >>(istream &is, Task &task) {
-		is >> task.wcec >> task.deadline >> task.Ij >> task.resources;
+		is >> task.priority >> task.wcec >> task.deadline >> task.Ij >> task.resources;
 		return is;
 	};
 };
