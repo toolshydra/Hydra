@@ -145,6 +145,29 @@ int SchedulabilityAnalysis::evaluateResponse(double *spread)
 	return ok;
 }
 
+void SchedulabilityAnalysis::printUtilization()
+{
+	int s, i, j, k;
+
+	cout << endl;
+	cout << "***************" << endl;
+	cout << "* Utilization *" << endl;
+	cout << "***************" << endl;
+	for (s = 0; s < nClusters; s++)
+		for (i = 0; i < nProcessors; i++) {
+			double ui = 0.0;
+
+			for (j = 0; j < nTasks; j++)
+				for (k = 0; k < nFrequencies; k++)
+					if (assignment[s][i][j][k] != 0)
+						ui += tasks[j].getUtilization();
+
+			cout << "U[" << s << "," << i << "] = " <<
+				std::fixed << std::setw(8) << std::setprecision(2) <<
+				ui << "%"<< endl;
+		}
+}
+
 /*
  * distributeTaskFrequencies: Compute resource priorities
  * @complexity: O(nClusters x nProcessors x ntasks x nFrequencies)

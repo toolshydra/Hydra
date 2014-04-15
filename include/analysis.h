@@ -56,7 +56,7 @@ public:
 	/* Schedulability Analysis */
 	void computeAnalysis();
 	int evaluateResponse(double *spread);
-	void evaluateUtilization();
+	void printUtilization();
 
 	/* IO */
 	void readModel();

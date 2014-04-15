@@ -145,6 +145,7 @@ int main(int argc, char *argv[])
 
 	SchedulabilityAnalysis sched(env, runtime, filename);
 	sched.computeAnalysis();
+	sched.printUtilization();
 
 	/* Compute output data */
 

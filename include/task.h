@@ -75,6 +75,10 @@ public:
 	{
 		return computation;
 	}
+	double getUtilization(void)
+	{
+		return computation / deadline; /* deadline == period */
+	}
 	double getIp(void)
 	{
 		return Ip;
