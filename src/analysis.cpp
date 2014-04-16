@@ -21,7 +21,7 @@
 SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime)
 	:frequencies(env), voltages(env), resourcePriorities(env), assignment(env),
 	nClusters(0), nProcessors(0), nTasks(0), nFrequencies(0), nResources(0),
-	runConfig(runtime), fileModel("model.txt"), loaded(false)
+	Lp(0.0), runConfig(runtime), fileModel("model.txt"), loaded(false)
 {
 	runConfig = runtime;
 	if (runConfig.getVerbose())
@@ -33,7 +33,7 @@ SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime)
 SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime, const char *filename)
 	:frequencies(env), voltages(env), resourcePriorities(env), assignment(env),
 	nClusters(0), nProcessors(0), nTasks(0), nFrequencies(0), nResources(0),
-	runConfig(runtime), fileModel(filename), loaded(false)
+	Lp(0.0), runConfig(runtime), fileModel(filename), loaded(false)
 {
 	if (runConfig.getVerbose())
 		cout << runConfig;
@@ -59,7 +59,7 @@ void SchedulabilityAnalysis::readModel()
 		throw(-1);
 	}
 
-	file >> ntasks >> nresources;
+	file >> ntasks >> nresources >> Lp;
 	file >> frequencies;
 	file >> voltages;
 
@@ -156,15 +156,19 @@ void SchedulabilityAnalysis::printUtilization()
 	for (s = 0; s < nClusters; s++)
 		for (i = 0; i < nProcessors; i++) {
 			double ui = 0.0;
+			double si = 0.0;
 
 			for (j = 0; j < nTasks; j++)
 				for (k = 0; k < nFrequencies; k++)
-					if (assignment[s][i][j][k] != 0)
+					if (assignment[s][i][j][k] != 0) {
 						ui += tasks[j].getUtilization();
+						if (Lp > 0.0)
+							si += tasks[j].getIa() / tasks[j].getDeadline();
+					}
 
 			cout << "U[" << s << "," << i << "] = " <<
-				std::fixed << std::setw(8) << std::setprecision(2) <<
-				ui << "%"<< endl;
+				std::fixed << std::setw(8) << std::setprecision(4) <<
+				ui << "% + "<< si << "% = " << ui + si << "%" << endl;
 		}
 }
 
@@ -285,11 +289,11 @@ void SchedulabilityAnalysis::computePrecedenceInfluency()
 			for (j = 0; j < nTasks; j++) {
 				for (k = 0; k < nFrequencies; k++)
 					if (assignment[s][i][j][k] != 0) {
-						Ip = tasks[j].getComputation() + tasks[j].getIb();
+						Ip = tasks[j].getComputation() + tasks[j].getIb() + tasks[j].getIa();
 						success = 0;
 						while (!success && Ip <= tasks[j].getDeadline()) {
 							Ipa = Ip;
-							Ip = tasks[j].getComputation() + tasks[j].getIb();
+							Ip = tasks[j].getComputation() + tasks[j].getIb() + tasks[j].getIa();
 							for (p = 0; p < nTasks; p++)
 								for (t = 0; t < nFrequencies; t++)
 									if (assignment[s][i][p][t] != 0)
@@ -305,6 +309,35 @@ void SchedulabilityAnalysis::computePrecedenceInfluency()
 							tasks[j].setIp(-1.0);
 					}
 			}
+}
+
+double SchedulabilityAnalysis::computeTaskArchitectureInfluence(int s, int i, int j)
+{
+	int p, t, o;
+	double numi = 0.0;
+
+	for (o = 0; o < nProcessors; o++) {
+		if (o == i)
+			continue;
+		for (p = 0; p < nTasks; p++)
+			for (t = 0; t < nFrequencies; t++)
+				if (assignment[s][o][p][t] != 0)
+					numi += ceil(tasks[j].getDeadline() / tasks[p].getDeadline()) * 2.0;
+	}
+
+	return (2.0 * Lp + numi * Lp);
+}
+
+void SchedulabilityAnalysis::computeArchitectureInfluence()
+{
+	int s, i, j, k;
+
+	for (s = 0; s < nClusters; s++)
+		for (i = 0; i < nProcessors; i++)
+			for (j = 0; j < nTasks; j++)
+				for (k = 0; k < nFrequencies; k++)
+					if (assignment[s][i][j][k] != 0)
+						tasks[j].setIa(computeTaskArchitectureInfluence(s, i, j));
 }
 
 /*
@@ -329,6 +362,8 @@ void SchedulabilityAnalysis::computeAnalysis()
 
 	/* O(nresources x ntasks ^ 2) */
 	computeExclusionInfluency();
+
+	computeArchitectureInfluence();
 	/* O(ntasks ^ 2) */
 	computePrecedenceInfluency();
 
@@ -338,6 +373,8 @@ void SchedulabilityAnalysis::computeAnalysis()
 
 		/* O(ntasks) */
 		printTaskAnalysis();
+
+		printUtilization();
 	}
 }
 
@@ -356,7 +393,8 @@ void SchedulabilityAnalysis::printTaskModel()
 	cout << "* Task Model *" << endl;
 	cout << "**************" << endl;
 	cout << std::setw(2) << nTasks << " tasks " <<
-		std::setw(2) << nResources << " resources" << endl;
+		std::setw(2) << nResources << " resources " <<
+		std::setw(2) << Lp << " Lp " << endl;
 	for (s = 0; s < nClusters; s++) {
 		cout << "Cluster: " << s << endl;
 		for (i = 0; i < nProcessors; i++) {
@@ -419,12 +457,14 @@ void SchedulabilityAnalysis::printTaskInfluencies()
 		cout << "Cluster: " << s << endl;
 		for (i = 0; i < nProcessors; i++) {
 			cout << "Processor: " << i << endl;
-			cout << "Task             Bi              Ji              Ii" << endl;
+			cout << "Task             Ai              Bi              Ji              Ii" << endl;
 
 			for (j = 0; j < nTasks; j++)
 				for (k = 0; k < nFrequencies; k++)
 					if (assignment[s][i][j][k] != 0) {
 						cout << "T" << std::setw(2) << j + 1 <<
+							"        " << std::fixed << std::setw(8) <<
+								std::setprecision(2) << tasks[j].getIa() <<
 							"        " << std::fixed << std::setw(8) <<
 								std::setprecision(2) << tasks[j].getIb() <<
 							"        " << std::fixed << std::setw(8) <<
@@ -455,7 +495,7 @@ void SchedulabilityAnalysis::printTaskAnalysis()
 		for (i = 0; i < nProcessors; i++) {
 			cout << "Processor: " << i << endl;
 			cout << "Task     Computation                     Ii                      "
-				"Ri                      Pi                  (Pi - Ii)               "
+				"Ri                   Di=Pi                  (Pi - Ii)               "
 				"(Pi - Ri)" << endl;
 
 			for (j = 0; j < nTasks; j++)

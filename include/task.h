@@ -28,6 +28,7 @@ private:
 	double computation;
 	double Ip;
 	double Ib;
+	double Ia;
 	double Ij;
 	IloNumArray resources;
 public:
@@ -50,6 +51,10 @@ public:
 	void setIp(double Ip)
 	{
 		this->Ip = Ip;
+	}
+	void setIa(double Ia)
+	{
+		this->Ia = Ia;
 	}
 	void setIb(double Ib)
 	{
@@ -86,6 +91,10 @@ public:
 	double getIb(void)
 	{
 		return Ib;
+	}
+	double getIa(void)
+	{
+		return Ia;
 	}
 	double getIj(void)
 	{

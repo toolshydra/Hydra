@@ -28,6 +28,7 @@ private:
 	int nTasks;
 	int nFrequencies;
 	int nResources;
+	double Lp; /* DVFS Worst Switching delay */
 
 	bool loaded;
 
@@ -48,6 +49,8 @@ private:
 	void computeResourcePriorities();
 	void computeExclusionInfluency();
 	void computePrecedenceInfluency();
+	void computeArchitectureInfluence();
+	double computeTaskArchitectureInfluence(int s, int i, int j);
 public:
 	/* Constructors */
 	SchedulabilityAnalysis(IloEnv env, runInfo runtime);
