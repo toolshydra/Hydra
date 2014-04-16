@@ -21,11 +21,12 @@ private:
 	bool summary;			/* print a summary in the end */
 	bool verbose;			/* verbose execution */
 	bool list;			/* list samples */
+	bool computeResources;		/* compute Bi based on input resources */
 
 public:
 	runInfo(void)
 	{
-		summary = verbose = list = false;
+		summary = verbose = list = computeResources = false;
 	}
 	void setSummary(bool summary)
 	{
@@ -39,6 +40,10 @@ public:
 	{
 		this->list = list;
 	};			/* list samples */
+	void setComputeResources(bool computeResources)
+	{
+		this->computeResources = computeResources;
+	};			/* Compute Bi based on input resources */
 	bool getSummary(void)
 	{
 		return summary;
@@ -51,11 +56,16 @@ public:
 	{
 		return list;
 	};			/* list samples */
+	bool getComputeResources(void)
+	{
+		return computeResources;
+	};			/* Compute Bi based on input resources */
 
 	friend ostream& operator <<(ostream &os, const runInfo &ri) {
 		os << "Summary: " << ri.summary << endl <<
 			"Verbose: " << ri.verbose << endl <<
-			"List: " << ri.list << endl;
+			"List: " << ri.list <<
+			"Compute Resource Bi: " << ri.computeResources << endl;
 	};
 };
 #endif

@@ -355,13 +355,16 @@ void SchedulabilityAnalysis::computeAnalysis()
 	distributeTaskFrequencies();
 
 	/* O(ntasks x nresources) */
-	computeResourcePriorities();
+	if (runConfig.getComputeResources())
+		computeResourcePriorities();
+
 	if (runConfig.getVerbose())
 		/* O(ntasks) + 2xO(nresources) + O(ntasks x nresources) */
 		printTaskModel();
 
 	/* O(nresources x ntasks ^ 2) */
-	computeExclusionInfluency();
+	if (runConfig.getComputeResources())
+		computeExclusionInfluency();
 
 	computeArchitectureInfluence();
 	/* O(ntasks ^ 2) */

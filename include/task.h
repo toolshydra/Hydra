@@ -126,7 +126,7 @@ public:
 		return os;
 	};
 	friend istream& operator >>(istream &is, Task &task) {
-		is >> task.priority >> task.wcec >> task.deadline >> task.Ij >> task.resources;
+		is >> task.priority >> task.wcec >> task.deadline >> task.Ij >> task.Ib >> task.resources;
 		return is;
 	};
 };

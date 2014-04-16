@@ -21,12 +21,13 @@ ILOSTLBEGIN
 
 #include <analysis.h>
 
-static const char *short_options = "hvstlm:";
+static const char *short_options = "hvstlrm:";
 static const struct option long_options[] = {
 	{ "help",     0, NULL, 'h' },
 	{ "verbose",  0, NULL, 'v' },
 	{ "summary",  0, NULL, 's' },
 	{ "list-samples",  0, NULL, 'l' },
+	{ "compute-resources",  0, NULL, 'r' },
 	{ "model-file",  required_argument, NULL, 'm' },
 	{ NULL,       0, NULL, 0   },   /* Required at end of array.  */
 };
@@ -39,6 +40,7 @@ static void print_usage(char *program_name)
 	"  -v  --verbose                     Print verbose messages." << endl <<
 	"  -s  --summary                     Print overall total numbers." << endl <<
 	"  -l  --list-samples                list each sample summary analysis." << endl <<
+	"  -r  --compute-resource            Compute each task's Bi (resource influence)." << endl <<
 	"  -m  --model-file                  Specify where to read the model." << endl;
 }
 
@@ -131,6 +133,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'l':   /* -l or --list-samples */
 			runtime.setList(true);
+			break;
+		case 'r':   /* -r or --compute-resources */
+			runtime.setComputeResources(true);
 			break;
 		case 'm':   /* -m or --model-file */
 			if (!optarg) {
