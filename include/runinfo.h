@@ -62,10 +62,10 @@ public:
 	};			/* Compute Bi based on input resources */
 
 	friend ostream& operator <<(ostream &os, const runInfo &ri) {
-		os << "Summary: " << ri.summary << endl <<
-			"Verbose: " << ri.verbose << endl <<
-			"List: " << ri.list <<
-			"Compute Resource Bi: " << ri.computeResources << endl;
+		os << "Summary = " << ri.summary << endl <<
+			"Verbose = " << ri.verbose << endl <<
+			"List = " << ri.list << endl <<
+			"Compute Resource Bi = " << ri.computeResources << endl;
 	};
 };
 #endif

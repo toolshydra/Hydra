@@ -127,12 +127,11 @@ public:
 	}
 
 	friend ostream& operator <<(ostream &os, const Task &task) {
-		os << "       " << std::setw(2)  << task.priority << 
-
-			"                " << std::fixed << std::setw(8) << std::setprecision(2) << task.computation <<
-			"                " << std::fixed << std::setw(8) << std::setprecision(2) << task.period <<
-			"                " << std::fixed << std::setw(8) << std::setprecision(2) << task.deadline <<
-			"                " << std::fixed << std::setw(8) << std::setprecision(2) << task.wcec;
+		os << std::setw(15) << task.priority << 
+			std::fixed << std::setw(15) << std::setprecision(2) << task.computation <<
+			std::fixed << std::setw(15) << std::setprecision(2) << task.period <<
+			std::fixed << std::setw(15) << std::setprecision(2) << task.deadline <<
+			std::fixed << std::setw(15) << std::setprecision(2) << task.wcec;
 		return os;
 	};
 	friend istream& operator >>(istream &is, Task &task) {
