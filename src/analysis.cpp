@@ -303,10 +303,7 @@ void SchedulabilityAnalysis::computePrecedenceInfluency()
 							if (almostequal2s_complement(Ip, Ipa, 1 << 22))
 								success = 1;
 						}
-						if (success)
-							tasks[j].setIp(Ip);
-						else
-							tasks[j].setIp(-1.0);
+						tasks[j].setIp(Ip);
 					}
 			}
 }
