@@ -53,6 +53,16 @@ static void print_usage(char *program_name)
  */
 static void print_summary(SchedulabilityAnalysis sched)
 {
+	double spread;
+	bool utilization, response;
+
+	utilization = sched.evaluateUtilization(1.0); /* EDF */
+	response = sched.evaluateResponse(&spread);
+
+	cout << "System is " << (utilization ? "" : "not ") <<
+		"schedulable, according to utilization." << endl;
+	cout << "System is " << (response ? "" : "not ") <<
+		"schedulable, according to task response." << endl;
 #if 0
 	int i;
 	struct timeval diff;

@@ -41,6 +41,25 @@ SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime, cons
 	readModel();
 }
 
+SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime, int ntask,
+		int nresources, double lp, IloNumArray2 freqs, IloNumArray2 volts,
+		vector <class Task> tset, IloNumArray4 assig)
+	:frequencies(freqs), voltages(volts), resourcePriorities(env), assignment(assig),
+	nClusters(assignment.getSize()), nProcessors(assignment[0].getSize()),
+	nTasks(assignment[0][0].getSize()), nFrequencies(assignment[0][0][0].getSize()),
+	nResources(nresources), tasks(tset), Lp(lp), runConfig(runtime), fileModel(""), loaded(true)
+{
+	int i;
+
+	if (runConfig.getVerbose())
+		cout << runConfig;
+
+	for (i = 0; i < nresources; i++)
+		resourcePriorities.add(-1.0);
+
+	assert(ntask != nTask);
+}
+
 /* IO */
 /* Reads task model, architecture model and power model */
 void SchedulabilityAnalysis::readModel()
@@ -94,7 +113,7 @@ void SchedulabilityAnalysis::readModel()
  * @parameter spread: how good the sample can spread the time for tasks
  * @complexity: O(ntasks)
  */
-int SchedulabilityAnalysis::evaluateResponse(double *spread)
+bool SchedulabilityAnalysis::evaluateResponse(double *spread)
 {
 	int i, ok;
 	char f[10];
@@ -145,14 +164,16 @@ int SchedulabilityAnalysis::evaluateResponse(double *spread)
 	return ok;
 }
 
-void SchedulabilityAnalysis::printUtilization()
+bool SchedulabilityAnalysis::evaluateUtilization(double bound)
 {
 	int s, i, j, k;
 
-	cout << endl;
-	cout << "***************" << endl;
-	cout << "* Utilization *" << endl;
-	cout << "***************" << endl;
+	if (runConfig.getVerbose()) {
+		cout << endl;
+		cout << "***************" << endl;
+		cout << "* Utilization *" << endl;
+		cout << "***************" << endl;
+	}
 	for (s = 0; s < nClusters; s++)
 		for (i = 0; i < nProcessors; i++) {
 			double ui = 0.0;
@@ -165,11 +186,16 @@ void SchedulabilityAnalysis::printUtilization()
 						if (Lp > 0.0)
 							si += tasks[j].getIa() / tasks[j].getPeriod();
 					}
+			if (runConfig.getVerbose())
+				cout << "U[" << s << "," << i << "] = " <<
+					std::fixed << std::setw(15) << std::setprecision(4) <<
+					ui << "% + "<< si << "% = " << ui + si << "%" << endl;
 
-			cout << "U[" << s << "," << i << "] = " <<
-				std::fixed << std::setw(15) << std::setprecision(4) <<
-				ui << "% + "<< si << "% = " << ui + si << "%" << endl;
+			if ((ui + si) > bound)
+				return false;
 		}
+
+	return true;
 }
 
 /*
@@ -373,8 +399,6 @@ void SchedulabilityAnalysis::computeAnalysis()
 
 		/* O(ntasks) */
 		printTaskAnalysis();
-
-		printUtilization();
 	}
 }
 
