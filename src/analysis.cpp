@@ -163,7 +163,7 @@ void SchedulabilityAnalysis::printUtilization()
 					if (assignment[s][i][j][k] != 0) {
 						ui += tasks[j].getUtilization();
 						if (Lp > 0.0)
-							si += tasks[j].getIa() / tasks[j].getDeadline();
+							si += tasks[j].getIa() / tasks[j].getPeriod();
 					}
 
 			cout << "U[" << s << "," << i << "] = " <<
@@ -322,7 +322,7 @@ double SchedulabilityAnalysis::computeTaskArchitectureInfluence(int s, int i, in
 		for (p = 0; p < nTasks; p++)
 			for (t = 0; t < nFrequencies; t++)
 				if (assignment[s][o][p][t] != 0)
-					numi += ceil(tasks[j].getDeadline() / tasks[p].getDeadline()) * 2.0;
+					numi += ceil(tasks[j].getPeriod() / tasks[p].getPeriod()) * 2.0;
 	}
 
 	return (2.0 * Lp + numi * Lp);
@@ -402,9 +402,9 @@ void SchedulabilityAnalysis::printTaskModel()
 		cout << "Cluster: " << s << endl;
 		for (i = 0; i < nProcessors; i++) {
 			cout << "Processor: " << i << endl;
-			cout << "Task       Priority          Computation"
-				"            Deadline                   WCEC"
-				"       Frequency" << endl;
+			cout << "Task Priority            Computation"
+				"                  Period                Deadline                    WCEC"
+				"  Frequency" << endl;
 
 			for (j = 0; j < nTasks; j++)
 				for (k = 0; k < nFrequencies; k++)
@@ -498,8 +498,8 @@ void SchedulabilityAnalysis::printTaskAnalysis()
 		for (i = 0; i < nProcessors; i++) {
 			cout << "Processor: " << i << endl;
 			cout << "Task     Computation                     Ii                      "
-				"Ri                   Di=Pi                  (Pi - Ii)               "
-				"(Pi - Ri)" << endl;
+				"Ri                      Di                      Pi                 (Di - Ii)"
+				"               (Di - Ri)" << endl;
 
 			for (j = 0; j < nTasks; j++)
 				for (k = 0; k < nFrequencies; k++)
@@ -513,6 +513,9 @@ void SchedulabilityAnalysis::printTaskAnalysis()
 							"                " << std::fixed << std::setw(8) <<
 								std::setprecision(2) <<
 								tasks[j].getResponse() <<
+							"                " << std::fixed << std::setw(8) <<
+								std::setprecision(2) <<
+								tasks[j].getPeriod() <<
 							"                " << std::fixed << std::setw(8) <<
 								std::setprecision(2) <<
 								tasks[j].getDeadline() <<

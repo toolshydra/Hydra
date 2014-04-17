@@ -23,6 +23,7 @@ using namespace std;
 class Task {
 private:
 	int priority;
+	double period;
 	double deadline;
 	double wcec;
 	double computation;
@@ -34,11 +35,15 @@ private:
 public:
 	Task(IloEnv env) :resources(env)
 	{
-		deadline = wcec = computation = Ip = Ib = Ij = 0.0;
+		period = deadline = wcec = computation = Ip = Ib = Ij = 0.0;
 	}
 	void setDeadline(double deadline)
 	{
 		this->deadline = deadline;
+	}
+	void setPeriod(double periodo)
+	{
+		this->period = period;
 	}
 	void setWcec(double wcec)
 	{
@@ -72,6 +77,10 @@ public:
 	{
 		return deadline;
 	}
+	double getPeriod(void)
+	{
+		return period;
+	}
 	double getWcec(void)
 	{
 		return wcec;
@@ -82,7 +91,7 @@ public:
 	}
 	double getUtilization(void)
 	{
-		return computation / deadline; /* deadline == period */
+		return computation / period;
 	}
 	double getIp(void)
 	{
@@ -114,19 +123,20 @@ public:
 	}
 	double getPrecedenceInfluence(double w)
 	{
-		return (ceil((w + Ij) / deadline) * computation);
+		return (ceil((w + Ij) / period) * computation);
 	}
 
 	friend ostream& operator <<(ostream &os, const Task &task) {
 		os << "       " << std::setw(2)  << task.priority << 
 
 			"                " << std::fixed << std::setw(8) << std::setprecision(2) << task.computation <<
+			"                " << std::fixed << std::setw(8) << std::setprecision(2) << task.period <<
 			"                " << std::fixed << std::setw(8) << std::setprecision(2) << task.deadline <<
 			"                " << std::fixed << std::setw(8) << std::setprecision(2) << task.wcec;
 		return os;
 	};
 	friend istream& operator >>(istream &is, Task &task) {
-		is >> task.priority >> task.wcec >> task.deadline >> task.Ij >> task.Ib >> task.resources;
+		is >> task.priority >> task.wcec >> task.period >> task.deadline >> task.Ij >> task.Ib >> task.resources;
 		return is;
 	};
 };
