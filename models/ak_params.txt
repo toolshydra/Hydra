@@ -1,0 +1,4 @@
+RelError = 0.05
+Confidence = 0.99
+MaxTransientObs = 10000000
+MaxSchrubenHeuristicObs = 10000000
