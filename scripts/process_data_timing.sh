@@ -3,7 +3,7 @@
 NO_ARGS=0
 E_OPTERROR=85
 
-PARAMLINE=3
+PARAMLINE=7
 PARAMNAME="lp"
 ALPHA=0.05
 
@@ -12,10 +12,10 @@ declare -a ESTNAMES
 function process_type {
 	PARAMNAME=$1
 	case $PARAMNAME in
-		"lp"		) PARAMLINE=4
-				  ESTNAMES=("DA_HE_EDF" "DA_HE_LL" "U_total") ;;
-		"no_lp"		) PARAMLINE=5
-				  ESTNAMES=("EDF" "LL" "AUDS" "U_total") ;;
+		"lp"		) PARAMLINE=7
+				  ESTNAMES=("DA_HE_EDF" "DA_HE_LL" "U_total" "TIME_EXACT" "TIME_DA_HE_EDF" "TIME_DA_HE_LL") ;;
+		"no_lp"		) PARAMLINE=9
+				  ESTNAMES=("EDF" "LL" "AUDS" "U_total" "TIME_EXACT" "TIME_AUDS" "TIME_EDF" "TIME_LL") ;;
 		*		) echo "Wrong type $1" && exit $E_OPTERROR ;;
 	esac
 }
