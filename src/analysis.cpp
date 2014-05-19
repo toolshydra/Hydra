@@ -28,6 +28,7 @@ SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime)
 		cout << runConfig;
 
 	readModel();
+	distributeTaskFrequencies();
 }
 
 SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime, const char *filename)
@@ -39,14 +40,15 @@ SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime, cons
 		cout << runConfig;
 
 	readModel();
+	distributeTaskFrequencies();
 }
 
 SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime, int ntask,
 		int nresources, double lp, IloNumArray2 freqs, IloNumArray2 volts,
 		vector <class Task> tset, IloNumArray4 assig)
 	:frequencies(freqs), voltages(volts), resourcePriorities(env), assignment(assig),
-	nClusters(assignment.getSize()), nProcessors(assignment[0].getSize()),
-	nTasks(assignment[0][0].getSize()), nFrequencies(assignment[0][0][0].getSize()),
+	nClusters(assig.getSize()), nProcessors(assig[0].getSize()),
+	nTasks(assig[0][0].getSize()), nFrequencies(assig[0][0][0].getSize()),
 	nResources(nresources), tasks(tset), Lp(lp), runConfig(runtime), fileModel(""), loaded(true)
 {
 	int i;
@@ -58,6 +60,7 @@ SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime, int 
 		resourcePriorities.add(-1.0);
 
 	assert(ntask != nTask);
+	distributeTaskFrequencies();
 }
 
 /* IO */
@@ -113,7 +116,7 @@ void SchedulabilityAnalysis::readModel()
  * @parameter spread: how good the sample can spread the time for tasks
  * @complexity: O(ntasks)
  */
-bool SchedulabilityAnalysis::evaluateResponse(double *spread)
+bool SchedulabilityAnalysis::evaluateResponse(double &spread)
 {
 	int i, ok;
 	char f[10];
@@ -159,14 +162,15 @@ bool SchedulabilityAnalysis::evaluateResponse(double *spread)
 	}
 
 	if (ok)
-		*spread = s;
+		spread = s;
 
 	return ok;
 }
 
-bool SchedulabilityAnalysis::evaluateUtilization(double bound)
+bool SchedulabilityAnalysis::evaluateUtilization(double bound, double &u)
 {
 	int s, i, j, k;
+	double sum = 0.0;
 
 	if (runConfig.getVerbose()) {
 		cout << endl;
@@ -174,6 +178,8 @@ bool SchedulabilityAnalysis::evaluateUtilization(double bound)
 		cout << "* Utilization *" << endl;
 		cout << "***************" << endl;
 	}
+	if (Lp > 0.0)
+		computeArchitectureInfluence();
 	for (s = 0; s < nClusters; s++)
 		for (i = 0; i < nProcessors; i++) {
 			double ui = 0.0;
@@ -193,7 +199,11 @@ bool SchedulabilityAnalysis::evaluateUtilization(double bound)
 
 			if ((ui + si) > bound)
 				return false;
+
+			sum += (ui + si);
 		}
+
+	u = sum / (nProcessors * nClusters);
 
 	return true;
 }
@@ -375,8 +385,6 @@ void SchedulabilityAnalysis::computeAnalysis()
 	if (!loaded)
 		return;
 
-	distributeTaskFrequencies();
-
 	/* O(ntasks x nresources) */
 	if (runConfig.getComputeResources())
 		computeResourcePriorities();
@@ -389,7 +397,8 @@ void SchedulabilityAnalysis::computeAnalysis()
 	if (runConfig.getComputeResources())
 		computeExclusionInfluency();
 
-	computeArchitectureInfluence();
+	if (Lp > 0.0)
+		computeArchitectureInfluence();
 	/* O(ntasks ^ 2) */
 	computePrecedenceInfluency();
 

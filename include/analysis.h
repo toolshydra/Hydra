@@ -61,8 +61,8 @@ public:
 
 	/* Schedulability Analysis */
 	void computeAnalysis();
-	bool evaluateResponse(double *spread);
-	bool evaluateUtilization(double bound);
+	bool evaluateResponse(double &spread);
+	bool evaluateUtilization(double bound, double &u);
 
 	/* IO */
 	void readModel();

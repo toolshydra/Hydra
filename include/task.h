@@ -37,11 +37,15 @@ public:
 	{
 		period = deadline = wcec = computation = Ip = Ib = Ij = 0.0;
 	}
+	void setPriority(int priority)
+	{
+		this->priority = priority;
+	}
 	void setDeadline(double deadline)
 	{
 		this->deadline = deadline;
 	}
-	void setPeriod(double periodo)
+	void setPeriod(double period)
 	{
 		this->period = period;
 	}
