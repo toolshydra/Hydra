@@ -1,0 +1,267 @@
+\input texinfo   @c -*-texinfo-*-
+@c %**start of header
+@setfilename hydratools.info
+@settitle Hydra Tools 1.0
+@c %**end of header
+
+@copying
+Copyright @copyright{} 2014 Universidade Federal do Amazonas.
+@end copying
+
+@titlepage
+@title Hydra Tools
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+@c Output the table of the contents at the beginning.
+@contents
+
+@iftex
+@node Top
+@top GNU Sample
+
+@insertcopying
+@end iftex
+
+@ifhtml
+@node Top
+@top GNU Sample
+
+@insertcopying
+@end ifhtml
+
+@ifinfo
+@node Top
+@top GNU Sample
+
+@insertcopying
+@end ifinfo
+
+@menu
+* Hydra::    	   Hydra tools.
+* Schedtests::     Schedtests tool.
+* Pseudosim:: 	   Pseudosim tool.
+@end menu
+
+@node Hydra
+@chapter Hydra
+@section What is Hydra?
+Hydra is a tools group works in Unix System, developed with the propose of
+the low power consumption for real time systems.
+The input is a task model and output is if the task model is scalable or not.
+Performs various scalability test for to discover if is scalable.
+It works for various processors or clusters.
+Uses the technique DVFS (Dynamic Voltage and Frequency Scaling).
+Determines optimal frequency on systems through an exhaustive search.
+The compiled in this package created other two tools: the SCHEDTESTS and
+PSEUDOSIM.
+Schedtests works with task models fixed and pseudosim works with models random.
+
+@section What is the use of Hydra?
+Hydra is useful for discover if a task model is scalable or not.
+Determines optimal frequency on systems with dynamic voltage and frequency
+scaling.
+Can be used for real time systems designers, the project of real time systems
+can be facilitated, case the target system contains a processor with functionality
+DVFS.
+Is useful for measuring power consumption.
+
+
+@section Package Content
+README - File contains informations
+
+INSTALL - How to build this tool
+
+src - source files
+
+include - header files
+
+Binaries - This package generates the following tools: schedtests and pseudosim
+
+Man Page - The man page for instructions
+
+Models - Some task models fixed
+
+Results - Some results
+
+High-ord - pdfs, graphics, evaluation
+
+Doc - Documentation in pdf
+
+Man - Documentation in man page
+
+@section Dependencies
+This tools uses two others tools: CPLEX and AKAROA,
+
+CPLEX is an optimization software package.
+
+AKAROA is a statistical treatment software package
+
+@section More informations
+For more information use the man page, read the readme file or enter in contact with
+
+Eduardo Valentin: (@email{ebv@@icomp.ufam.edu.br})
+
+@node Schedtests
+@chapter Schedtests
+A tool for real time system
+
+@section Synopsis
+schedtests OPTIONS
+
+@section Descriptions
+Schedtests is a tool works in Unix System, developed with the propose of the low
+power consumption in real time system.
+The input is a task model and output is if the task model is scalable or not.
+Performs various scalability test for to discover if is scalable. It works for various
+processors or clusters.
+
+@section Options
+        -h, --help
+
+                Display this usage information.
+
+
+        -v, --verbose
+
+                Print verbose messages.
+
+
+        -s, --summary
+
+                Print overall total numbers.
+
+
+        -l, --list-samples
+
+                List each sample summary analysis.
+
+
+        -r, --compute-resource
+
+                Compute each task's Bi (resource influence).
+
+
+        -m, --model-file
+
+                Specify where to read the model.
+
+@section Input Files
+the input file schedtst is described below:
+
+       N     R    LP
+
+       U11    U12  U13 … U1N
+
+        .      .    .     .
+
+       UN1    UN2  UN3 … UNN
+
+       F11    F12  F13 … F1N
+
+        .   .    .     .
+
+       FN1    FN2  FN3 … FNN
+
+       P1   WCEC1   D1   T1    J1    B1      M1,1 M1,2 … M1,R
+
+       P2   WCEC2   D2   T2    J2    B2      M2,1 M2,2 … M2,R
+
+        .   .     .    .     .     .        .    .      .
+
+       PN  WCECN    DN   TN    JN    BN      MN,1 MN,2 … MN,R
+
+       CPFV - [0,1]
+
+       CPFV1111   CPFV1112  ... CPFV 111N
+
+       N – number of tasks
+
+       R –  number of shared resources
+
+       LP – latency performance states
+
+       U – voltage (matrix whose: line is voltage and column is cluster)
+
+       F – frequency (matrix whose: line is frequency and column is cluster)
+
+       P – priority of tasks
+
+       WCEC – number of cycles worst case of the task
+
+       D – deadline of the task
+
+       T – period of the task
+
+       J - release jitter of the task
+
+       B – blocking (delay)
+
+       M – shared resources by tasks
+
+       CPFV – matrix related to processors, tasks, frequencies and cluster
+
+
+@node Pseudosim
+@chapter Pseudosim
+A tool for real time system
+
+@section Synopsis
+pseudosim OPTIONS
+
+@section Descriptions
+Pseudosim is a tool works in Unix System, developed with the propose of the low
+power consumption in real time system.
+Performs various scalability test for to discover if is scalable. It works for various
+processors or clusters.
+The input are parameters for generating of a task model with random variables
+created by akaroa and the output is if task models is scalable or not.
+
+@section Options
+        -h, --help
+
+                Display this usage information.
+
+
+	-v, --verbose
+
+                Print verbose messages.
+
+
+	-c, --compare-no-lp
+
+                Compare the difference to test without A_i.
+
+
+	-f, --freq-file=<file-name>
+
+                File name with frequencies per cluster.
+
+
+	-r, --range-file=<file-name>
+
+                File name with task model ranges.
+
+
+	-n, --task-count=<task-count>
+                Number of tasks to be generated per task model.
+
+	-l, --switch-latency=<Lp>
+
+                Switching Latency.
+
+
+	-m, --processor-count=<freq-count>
+
+                Number of processors per cluster.
+
+@section Buggs
+"pseudosim: error while loading shared libraries: libakaroa.so: cannot open shared
+object file: No such file or directory"
+
+Solved:
+$ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:path_akaroa/
+
+@bye

@@ -27,4 +27,11 @@ AC_CHECK_FUNCS([memset])
 AC_CHECK_FUNCS([ceil])
 
 AC_OUTPUT([Makefile
-                 src/Makefile])
+                 src/Makefile
+                 doc/Makefile])
+
+#Checks for texinfo, required for building the documentation 
+AC_CHECK_TOOL([TEXINFO], [makeinfo], [yes])
+AS_IF ([test "x$TEXINFO" != "xyes"], 
+AC_MSG_NOTICE ([Please install the 'texinfo' program and make sure 'makeinfo' is in the PATH.])
+])
