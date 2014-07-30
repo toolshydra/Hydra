@@ -1,0 +1,50 @@
+Schedulability
+==============
+*************************
+What is Schedulability?
+*************************
+Schedulability is a tools group works in Unix System, developed with
+the propose of the low power consumption for real time systems.
+The input is a task model and output is if the task model is scalable or not.
+Performs various scalability test for to discover if is scalable.
+It works for various processors or clusters.
+Uses the technique DVFS (Dynamic Voltage and Frequency Scaling).
+Determines optimal frequency on systems through an exhaustive search.
+The compiled in this package created other two tools: the SCHEDTESTS and PSEUDOSIM.
+Schedtests works with task models fixed and pseudosim works with models random.
+
+**********************************
+What is the use of Schedulability?
+**********************************
+Schedulability is useful for discover if a task model is scalable or not.
+Determines optimal frequency on systems with dynamic voltage and frequency scaling.
+Can be used for real time systems designers, the project of real time systems
+can be facilitated, case the target system contains a processor with functionality
+DVFS.
+Is useful for measuring power consumption.
+
+***************
+Package Content
+***************
+README - This file
+INSTALL - How to build this tool
+src - source files
+include - header files
+Binaries - This package generates the following tools: schedtests and pseudosim
+Man Page - The man page for instructions
+Models - Some task models fixed  
+Results - Some results
+High-ord - pdfs, graphics, evaluation
+  
+*************
+Dependencies
+*************
+This tools uses two others tools: CPLEX and AKAROA, 
+CPLEX is an optimization software package.
+AKAROA is a statistical treatment software package
+
+******************
+More informations
+******************
+For more information use the man page or enter in contact with
+Eduardo Valentin: ebv@icomp.ufam.edu.br
