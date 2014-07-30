@@ -1,0 +1,52 @@
+.TH PSEUDOSIM 1 PSEUDOSIM
+
+.SH NAME
+pseudosim \- a tool for real time system
+
+.SH SYNOPSIS
+.B pseudosim
+[\fIOPTIONS\fR]
+
+.SH DESCRIPTION
+Pseudosim is a tool works in Unix System, developed with the propose of the low power consumption in real time system.
+Performs various scalability test for to discover if is scalable. It works for various processors or clusters. 
+The input are parameters for generating of a task model with random variables created by akaroa and the output is if task models is scalable or not.
+
+
+.SH OPTIONS
+.TP
+\fB\-h, \-\-help\fR
+Display this usage information.
+.TP
+\fB\-v, \-\-verbose\fR
+Print verbose messages.
+.TP
+\fB\-c, \-\-compare-no-lp\fR
+Compare the difference to test without A_i.
+.TP
+\fB\-f, \-\-freq-file=<file-name>\fR
+File name with frequencies per cluster.
+.TP
+\fB\-r, \-\-range-file=<file-name>\fR
+File name with task model ranges.
+.TP
+\fB\-n, \-\-task-count=<task-count>\fR
+Number of tasks to be generated per task model.
+\fB\-l, \-\-switch-latency=<Lp>\fR
+Switching Latency.
+\fB\-m, \-\-processor-count=<freq-count>\fR
+Number of processors per cluster.
+
+.SH SEE ALSO
+The README for more information.
+
+.SH AUTHOR
+This tools was developed by Eduardo Bezerra Valentin at Federal University of Amazonas, Brazil.
+.TP
+Contact: ebv@icomp.ufam.edu.br
+
+.SH BUGGS
+"pseudosim: error while loading shared libraries: libakaroa.so: cannot open shared object file: No such file or directory"
+.TP
+SOLVED: 
+$ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:path_akaroa/lib/

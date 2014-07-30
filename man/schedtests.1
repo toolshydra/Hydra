@@ -1,0 +1,95 @@
+.TH SCHEDTESTS 1 SCHEDTESTS
+
+.SH NAME
+schedtests \- a tool for real time system
+
+.SH SYNOPSIS
+.B schedtests
+[\fIOPTIONS\fR]
+
+.SH DESCRIPTION
+Schedtests is a tool works in Unix System, developed with the propose of the low power consumption in real time system.  
+The input is a task model and output is if the task model is scalable or not.
+Performs various scalability test for to discover if is scalable. It works for various processors or clusters.
+
+.SH OPTIONS
+.TP
+\fB\-h, \-\-help\fR
+Display this usage information.
+.TP
+\fB\-v, \-\-verbose\fR
+Print verbose messages.
+.TP
+\fB\-s, \-\-summary\fR
+Print overall total numbers.
+.TP
+\fB\-l, \-\-list-samples\fR
+List each sample summary analysis.
+.TP
+\fB\-r, \-\-compute-resource\fR
+Compute each task's Bi (resource influence).
+.TP
+\fB\-m, \-\-model-file\fR
+Specify where to read the model.
+
+.SH INPUT FILES
+N     R    LP	
+.TP
+U11    U12  U13 … U1N
+.TP
+ .      .    .     .
+.TP
+UN1    UN2  UN3 … UNN
+.TP
+F11    F12  F13 … F1N
+.TP
+ .	.    .     .  
+.TP
+FN1    FN2  FN3 … FNN
+.TP
+P1   WCEC1   D1   T1    J1    B1      M1,1 M1,2 … M1,R     
+.TP
+P2   WCEC2   D2   T2    J2    B2      M2,1 M2,2 … M2,R     
+.TP
+ .	.     .    .     .     .        .    .      .
+.TP
+PN  WCECN    DN   TN    JN    BN      MN,1 MN,2 … MN,R     
+.TP
+CPFV - [0,1]
+.TP
+CPFV1111   CPFV1112  ... CPFV 111N
+.TP
+N – number of tasks
+.TP
+R –  number of shared resources
+.TP
+LP – latency performance states
+.TP
+U – voltage (matrix whose: line is voltage and column is cluster)
+.TP
+F – frequency (matrix whose: line is frequency and column is cluster)
+.TP
+P – priority of tasks
+.TP
+WCEC – number of cycles worst case of the task
+.TP
+D – deadline of the task
+.TP
+T – period of the task
+.TP
+J - release jitter of the task
+.TP
+B – blocking (delay)
+.TP
+M – shared resources by tasks
+.TP
+CPFV – matrix related to processors, tasks, frequencies and cluster
+
+.SH SEE ALSO
+The README for more information or see the models directory for input files.
+
+.SH AUTHOR
+This tools was developed by Eduardo Bezerra Valentin at Federal University of Amazonas, Brazil.
+.TP
+Contact: ebv@icomp.ufam.edu.br
+
