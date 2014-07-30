@@ -1,21 +1,27 @@
-SYSTEM     = x86-64_darwin
+SYSTEM     = x86-64_sles10_4.1
 LIBFORMAT  = static_pic
 
-CPLEXDIR      = /Users/evalentin/Applications/IBM/ILOG/CPLEX_Studio1251/cplex
-CONCERTDIR    = /Users/evalentin/Applications/IBM/ILOG/CPLEX_Studio1251/concert
+CPLEXDIR      = /opt/ibm/ILOG/CPLEX_Studio1251/cplex
+CONCERTDIR    = /opt/ibm/ILOG/CPLEX_Studio1251/concert
 CONCERTINCDIR = $(CONCERTDIR)/include
 CPLEXINCDIR   = $(CPLEXDIR)/include
 CPLEXLIBDIR   = $(CPLEXDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
 CONCERTLIBDIR = $(CONCERTDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
 
-AKAROA2DIR    = /Users/evalentin/local/akaroa/
+AKAROA2DIR    = /usr/local/akaroa
 AKAROA2INCDIR   = $(AKAROA2DIR)/include
 AKAROA2LIBDIR   = $(AKAROA2DIR)/lib
 
-AM_CPPFLAGS = -I$(AKAROA2INCDIR) -I../include -m64 -O -fPIC -fexceptions -DILO_LINUX -DNDEBUG -DIL_STD -fno-strict-aliasing -I$(CPLEXINCDIR) -I$(CONCERTINCDIR)
-AM_LDFLAGS = -L$(AKAROA2LIBDIR) -lakaroa -largs -lfl -lm -DILO_LINUX -L$(CPLEXLIBDIR) -L$(CONCERTLIBDIR) -lconcert -lilocplex -lcplex -m64 -lm -lpthread -framework CoreFoundation -framework IOKit -fno-strict-aliasing
+
+AM_CPPFLAGS = -O0 -m64 -O -fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD -I../include -I$(CONCERTINCDIR) -I$(CPLEXINCDIR) -I$(AKAROA2INCDIR)
 
 bin_PROGRAMS = schedtests pseudosim
 schedtests_SOURCES = schedulability.cpp analysis.cpp
+schedtests_LDADD = -L$(CPLEXLIBDIR) -L$(CONCERTLIBDIR) -lconcert -lilocplex -lcplex -lm -lpthread
 pseudosim_SOURCES = pseudosim.cpp analysis.cpp
+pseudosim_LDADD = -L$(AKAROA2LIBDIR) -L$(CPLEXLIBDIR) -L$(CONCERTLIBDIR) -lconcert -lilocplex -lcplex -lm -lpthread -lakaroa -largs -lfl
+
+
+
+
 
