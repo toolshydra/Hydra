@@ -7,6 +7,44 @@ Software Foundation, Inc.
 This file is free documentation; the Free Software Foundation gives
 unlimited permission to copy, distribute and modify it.
 
+============================================
+Installation on Linux system (Ubuntu 13.10)
+============================================
+The simplest way to compile this package is:
+
+Go to the directory that contains the source code of the package and extract the directory.
+Go to the extracted directory.
+
+You need to have installed on your machine the automake, autoconf and autotools: 
+$ sudo apt-get install automake
+$ sudo apt-get install autoconf
+$ sudo apt-get install autotools-dev
+
+You need to install two other tools: CPLEX and AKAROA.
+The CPLEX is available online at: "http://www-01.ibm.com/software/commerce/optimization/cplex-optimizer/"
+The AKAROA is available online at: "https://akaroa.canterbury.ac.nz/akaroa/"
+There is a version that is free for students.
+
+After installing these two tools, go to the directory of Schedulability tool
+Enter in the "src" directory, open in edit mode the "Makefile.am" file,
+Set the "CPLEXDIR", "CONCERTDIR", "SYSTEM" and "AKAROA2DIR" variables, to where is installed the CPLEX and AKAROA in your machine.
+
+Now make:
+$ autoreconf; automake; autoreconf;
+$ ./configure
+$ make
+$ sudo make install
+
+=======================
+Installation on Mac OS:
+=======================
+You need to install a GNU GCC compiler because CPLEX requires the use of a GNU GCC compiler.
+$ sudo port install gcc
+
+Follow the same installation steps in linux system, but when running "./configure" do:
+$ CXX = <path to your GNU g++> CPPFLAGS =-DILO_LINUX ./configure
+
+==================
 Basic Installation
 ==================
 
