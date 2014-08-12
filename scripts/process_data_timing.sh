@@ -12,10 +12,10 @@ declare -a ESTNAMES
 function process_type {
 	PARAMNAME=$1
 	case $PARAMNAME in
-		"lp"		) PARAMLINE=7
-				  ESTNAMES=("DA_HE_EDF" "DA_HE_LL" "U_total" "TIME_EXACT" "TIME_DA_HE_EDF" "TIME_DA_HE_LL") ;;
-		"no_lp"		) PARAMLINE=9
-				  ESTNAMES=("EDF" "LL" "AUDS" "U_total" "TIME_EXACT" "TIME_AUDS" "TIME_EDF" "TIME_LL") ;;
+		"lp"		) PARAMLINE=8
+				  ESTNAMES=("DA_HE_EDF" "DA_HE_LL" "U_total" "TIME_EXACT" "TIME_DA_HE_EDF" "TIME_DA_HE_LL" "ENERGY") ;;
+		"no_lp"		) PARAMLINE=10
+				  ESTNAMES=("EDF" "LL" "AUDS" "U_total" "TIME_EXACT" "TIME_AUDS" "TIME_EDF" "TIME_LL" "ENERGY") ;;
 		*		) echo "Wrong type $1" && exit $E_OPTERROR ;;
 	esac
 }

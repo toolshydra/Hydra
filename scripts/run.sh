@@ -6,23 +6,22 @@ AK_PARAMS=models/ak_params.txt
 
 SCHED_HOME=/Users/evalentin/Documents/doutorado/algorithms/schedulability
 SIM=$SCHED_HOME/src/pseudosim
-LOG=$SCHED_HOME/results/time
+LOG=$SCHED_HOME/results/time_energy_all_zero_ui
 
 LP=0.45
 
-for t in lp no_lp ; do
-#for t in lp; do
+for t in lp ; do
 	if [ "$t" == "lp" ] ; then
-		PARAM=""
+		PARAM="--compute-power"
 		NTASKS=30
 	else
-		PARAM="--compare-no-lp"
+		PARAM="--compute-power --compare-no-lp"
 		NTASKS=30
 	fi
-	RANGES=$SCHED_HOME/models/simulation_$t/modelsimranges.txt
+	RANGES=$SCHED_HOME/models/simulation_${t}_energy/modelsimranges.txt
 	for c in 1 2 ; do
-		FREQS=$SCHED_HOME/models/simulation_$t/modelsimfreqs-${c}cluster.txt
-		for p in 16 ; do
+		FREQS=$SCHED_HOME/models/simulation_${t}_energy/modelsimfreqs-${c}cluster.txt
+		for p in 4 8 16 ; do
 			TMPFS=$(mktemp -t sim)
 			echo "#!/bin/bash" > $TMPFS
 			echo "$SIM --freq-file=$FREQS --range-file=$RANGES --processor-count=$p --task-count=$NTASKS --switch-latency=$LP $PARAM" >> $TMPFS
