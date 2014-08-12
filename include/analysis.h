@@ -51,6 +51,12 @@ private:
 	void computePrecedenceInfluency();
 	void computeArchitectureInfluence();
 	double computeTaskArchitectureInfluence(int s, int i, int j);
+	unsigned long long gcd(unsigned long long a, unsigned long long b);
+	unsigned long long gcd_hash(unsigned long long i, unsigned long long j);
+	long long lcm(long long a, long long b);
+	/* Compute LCM of all periods of tasks in processor p of cluster c */
+	long long computeLCM(int c, int p);
+	long long computeLCM(void);
 public:
 	/* Constructors */
 	SchedulabilityAnalysis(IloEnv env, runInfo runtime);

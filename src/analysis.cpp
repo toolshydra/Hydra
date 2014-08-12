@@ -14,6 +14,7 @@
 #include <math.h>
 
 #include <analysis.h>
+#include <gcd_hash.h>
 
 #include <string>
 
@@ -165,6 +166,97 @@ bool SchedulabilityAnalysis::evaluateResponse(double &spread)
 		spread = s;
 
 	return ok;
+}
+
+unsigned long long SchedulabilityAnalysis::gcd(unsigned long long a, unsigned long long b)
+{
+	long long tmp;
+
+	/* As simple as Euclides told me */
+	while (b != 0) {
+
+		tmp = b;
+		b = a % b;
+		a = tmp;
+	}
+
+	return a;
+}
+
+unsigned long long SchedulabilityAnalysis::gcd_hash(unsigned long long i, unsigned long long j)
+{
+	unsigned long long a, b;
+
+	a = i; b = j;
+
+	if ((a < MAX_GCD) && (b < MAX_GCD)) {
+		return gcd_lookup[a][b];
+	}
+	if ((a % 2) == 0 && (b % 2) == 0) { /* both even*/
+		a = a >> 1; b = b >> 1;
+		if ((a < MAX_GCD) && (b < MAX_GCD))
+			return gcd_lookup[a][b] * 2;
+	} else if ((a % 2) == 1 && (b % 2) == 0) {
+		b = b >> 1;
+		if ((a < MAX_GCD) && (b < MAX_GCD))
+			return gcd_lookup[a][b];
+	} else if ((a % 2) == 0 && (b % 2) == 1) {
+		a = a >> 1;
+		if ((a < MAX_GCD) && (b < MAX_GCD))
+			return gcd_lookup[a][b];
+	}
+
+	return gcd(i, j);
+}
+
+long long SchedulabilityAnalysis::lcm(long long a, long long b)
+{
+	long long tmp = gcd_hash(a, b);
+
+	if (tmp)
+		return (a * b) / tmp;
+
+	return 0;
+}
+
+long long SchedulabilityAnalysis::computeLCM(void)
+{
+	int j, k;
+	long long LCM;
+
+	LCM = 0;
+	for (j = 0; j < nTasks; j++) {
+		long long period = ceil(tasks[j].getPeriod());
+
+		if (LCM == 0)
+			LCM = period;
+
+		LCM = lcm(LCM, period);
+	}
+
+	return LCM;
+}
+
+long long SchedulabilityAnalysis::computeLCM(int c, int p)
+{
+	int j, k;
+	long long LCM;
+
+	LCM = 0;
+	for (j = 0; j < nTasks; j++) {
+		for (k = 0; k < nFrequencies; k++) {
+			if (assignment[c][p][j][k] != 0) {
+				long long period = ceil(tasks[j].getPeriod());
+
+				if (LCM == 0)
+					LCM = period;
+
+				LCM = lcm(LCM, period);
+			}
+		}
+	}
+
+	return LCM;
 }
 
 bool SchedulabilityAnalysis::evaluateUtilization(double bound, double &u)
