@@ -25,6 +25,7 @@ static double wcec_min = 100, wcec_max = 200;
 static double deadline_min = 10, deadline_max = 50;
 static double period_min = 10, period_max = 50;
 static bool compare_no_lp = 0;
+static bool compute_power = false;
 
 static double inline next_ak(double min, double max) {
 	double v;
@@ -36,10 +37,11 @@ static double inline next_ak(double min, double max) {
 	return v;
 }
 
-static const char *short_options = "hvf:r:n:m:l:c";
+static const char *short_options = "hvpf:r:n:m:l:c";
 static const struct option long_options[] = {
 	{ "help",     0, NULL, 'h' },
 	{ "verbose",  0, NULL, 'v' },
+	{ "compute-power",  0, NULL, 'p' },
 	{ "freq-file",  required_argument, NULL, 'f' },
 	{ "range-file",  required_argument, NULL, 'r' },
 	{ "task-count",  required_argument, NULL, 'n' },
@@ -56,6 +58,7 @@ static void print_usage(char *program_name)
 	"  -h  --help                             Display this usage information.\n"
 	"  -v  --verbose                          Print verbose messages.\n"
 	"  -c  --compare-no-lp                    Compare the difference to test without A_i.\n"
+	"  -p  --compute-power                    Estimate system average energy consumption.\n"
 	"  -f  --freq-file=<file-name>            File name with frequencies per cluster.\n"
 	"  -r  --range-file=<file-name>           File name with task model ranges.\n"
 	"  -n  --task-count=<task-count>          Number of tasks to be generated per task model.\n"
@@ -79,6 +82,16 @@ int compar(const void *a, const void *b) {
 
 	/*we want decreasing order*/
 	return *lb - *la;
+}
+
+static int read_power_model(char *freq_file_name, IloNumArray2 &freqs, IloNumArray2 &pdyn,
+				IloNumArray2 &pstat)
+{
+	ifstream file(freq_file_name);
+
+	file >> freqs >> pdyn >> pstat;
+
+	return 0;
 }
 
 static int read_frequencies(char *freq_file_name, IloNumArray2 &freqs, IloNumArray2 &volts)
@@ -162,6 +175,8 @@ int main(int argc, char *argv[])
 	vector <class Task> tasks;
 	IloNumArray2 freqs(env);
 	IloNumArray2 volts(env);
+	IloNumArray2 pdyn(env);
+	IloNumArray2 pidle(env);
 	struct runInfo runtime;
 	double Lp = 0.0;
 	int nclusters = 0;
@@ -192,6 +207,9 @@ int main(int argc, char *argv[])
 			break;
 		case 'c':   /* -c or --compare_no_lp */
 			compare_no_lp = true;
+			break;
+		case 'p':   /* -p or --compute-power */
+			compute_power = true;
 			break;
 		case 'l':   /* -l or --switch-latency */
 			if (!optarg) {
@@ -235,7 +253,11 @@ int main(int argc, char *argv[])
 		}
 	} while (next_option != -1);
 
-	err = read_frequencies(freq_file_name, freqs, volts);
+	if (compute_power)
+		err = read_power_model(freq_file_name, freqs, pdyn, pidle);
+	else
+		err = read_frequencies(freq_file_name, freqs, volts);
+
 	if (err < 0)
 		return err;
 
@@ -270,11 +292,12 @@ int main(int argc, char *argv[])
 
 
 	if (compare_no_lp)
-		AkDeclareParameters(8);
+		AkDeclareParameters(8 + (compute_power ? 1 : 0));
 	else
-		AkDeclareParameters(6);
+		AkDeclareParameters(6 + (compute_power ? 1 : 0));
+
 	while (!AkSimulationOver()) {
-		double sp, ui, n = ntasks;
+		double sp, ui, n = ntasks, energy;
 		bool u_edf, u_ll, r;
 		bool u_edf0, u_ll0, r0;
 
@@ -285,26 +308,37 @@ int main(int argc, char *argv[])
 			return err;
 		}
 		gen_assignments(assig, nclusters, nprocs, ntasks, nfreqs);
-		SchedulabilityAnalysis sched(env, runtime, ntasks,
+		SchedulabilityAnalysis *sched;
+		if (compute_power)
+			sched = new SchedulabilityAnalysis(env, runtime, ntasks,
+						0, /* nresources */
+						Lp, /* Lp */
+						freqs, pdyn, pidle, tasks, assig);
+		else
+			sched = new SchedulabilityAnalysis(env, runtime, ntasks,
 						0, /* nresources */
 						Lp, /* Lp */
 						freqs, volts, tasks, assig);
 		gettimeofday(&st, NULL);
-		sched.computeAnalysis();
+		sched->computeAnalysis();
 		gettimeofday(&e, NULL);
 		times[0] = get_execution_time(st, e);
 
 		gettimeofday(&st, NULL);
-		u_edf = sched.evaluateUtilization(1.0, ui);
+		u_edf = sched->evaluateUtilization(1.0, ui);
 		gettimeofday(&e, NULL);
 		times[1] = get_execution_time(st, e);
 
 		gettimeofday(&st, NULL);
-		u_ll = sched.evaluateUtilization(n * (pow(2.0, 1.0 / n) - 1.0), ui);
+		u_ll = sched->evaluateUtilization(n * (pow(2.0, 1.0 / n) - 1.0), ui);
 		gettimeofday(&e, NULL);
 		times[2] = get_execution_time(st, e);
 
-		r = sched.evaluateResponse(sp);
+		r = sched->evaluateResponse(sp);
+
+		energy = sched->computeSystemEnergy();
+
+		delete sched;
 
 		SchedulabilityAnalysis sched0(env, runtime, ntasks,
 					0, /* nresources */
@@ -337,6 +371,8 @@ int main(int argc, char *argv[])
 			AkParamObservation(6, times[3]); /* R_0 */
 			AkParamObservation(7, times[4]); /* u_edf0 */
 			AkParamObservation(8, times[5]); /* u_ll0 */
+			if (compute_power)
+				AkParamObservation(9, energy); /* power */
 		} else {
 			AkParamObservation(1, r - u_edf);
 			AkParamObservation(2, r - u_ll);
@@ -344,6 +380,8 @@ int main(int argc, char *argv[])
 			AkParamObservation(4, times[0]); /* R Lp */
 			AkParamObservation(5, times[1]); /* u_edf */
 			AkParamObservation(6, times[2]); /* u_ll */
+			if (compute_power)
+				AkParamObservation(7, energy); /* power */
 		}
 	}
 
