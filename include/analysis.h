@@ -36,6 +36,8 @@ private:
 
 	IloNumArray2 frequencies;
 	IloNumArray2 voltages;
+	IloNumArray2 pdyn;
+	IloNumArray2 pidle;
 
 	IloNumArray4 assignment;
 
@@ -65,10 +67,14 @@ public:
 		int nresources, double lp, IloNumArray2 freqs, IloNumArray2 volts,
 		vector <class Task> tset, IloNumArray4 assig);
 
+	SchedulabilityAnalysis(IloEnv env, runInfo runtime, int ntask,
+		int nresources, double lp, IloNumArray2 freqs, IloNumArray2 power_dyn,
+		IloNumArray2 power_idle, vector <class Task> tset, IloNumArray4 assig);
 	/* Schedulability Analysis */
 	void computeAnalysis();
 	bool evaluateResponse(double &spread);
 	bool evaluateUtilization(double bound, double &u);
+	double computeSystemEnergy(void);
 
 	/* IO */
 	void readModel();

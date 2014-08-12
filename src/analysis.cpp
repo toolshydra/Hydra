@@ -62,6 +62,28 @@ SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime, int 
 
 	assert(ntask != nTask);
 	distributeTaskFrequencies();
+
+	/* TODO: computePower() */
+}
+
+SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime, int ntask,
+		int nresources, double lp, IloNumArray2 freqs, IloNumArray2 power_dyn,
+		IloNumArray2 power_idle, vector <class Task> tset, IloNumArray4 assig)
+	:frequencies(freqs), pdyn(power_dyn), pidle(power_idle), resourcePriorities(env),
+	assignment(assig), nClusters(assig.getSize()), nProcessors(assig[0].getSize()),
+	nTasks(assig[0][0].getSize()), nFrequencies(assig[0][0][0].getSize()),
+	nResources(nresources), tasks(tset), Lp(lp), runConfig(runtime), fileModel(""), loaded(true)
+{
+	int i;
+
+	if (runConfig.getVerbose())
+		cout << runConfig;
+
+	for (i = 0; i < nresources; i++)
+		resourcePriorities.add(-1.0);
+
+	assert(ntask != nTask);
+	distributeTaskFrequencies();
 }
 
 /* IO */
@@ -257,6 +279,36 @@ long long SchedulabilityAnalysis::computeLCM(int c, int p)
 	}
 
 	return LCM;
+}
+
+double SchedulabilityAnalysis::computeSystemEnergy(void)
+{
+	int s, i, j, k;
+	double edyn = 0.0, estat = 0.0;
+
+	double LCM = computeLCM();
+	for (s = 0; s < nClusters; s++)
+		for (i = 0; i < nProcessors; i++) {
+			double ui = 0.0;
+			double Pidle = pidle[s][0]; /* dummy getmax() */
+			/* TODO: Investigate if LCM must be per processor */
+
+			for (j = 0; j < nTasks; j++) {
+				for (k = 0; k < nFrequencies; k++) {
+					double u = tasks[j].getUtilization();
+					if (assignment[s][i][j][k] != 0) {
+						ui += u;
+						edyn += floor(LCM / tasks[j].getPeriod()) *
+							(u * LCM * pdyn[s][k]);
+					}
+				}
+			}
+
+			if (ui > 0)
+				estat += LCM * (1.0 - ui) * Pidle; /* Not smart here */
+		}
+
+	return edyn + estat;
 }
 
 bool SchedulabilityAnalysis::evaluateUtilization(double bound, double &u)
