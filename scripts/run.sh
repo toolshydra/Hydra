@@ -2,7 +2,7 @@
 AK_HOME=$HOME/local/akaroa
 AKRUN=$AK_HOME/bin/akrun
 AK_INSTANCES=16
-AK_PARAMS=models/ak_params.txt
+AK_PARAMS=models/simulation_sample/ak_params.txt
 
 SCHED_HOME=/Users/evalentin/Documents/doutorado/algorithms/schedulability
 SIM=$SCHED_HOME/src/pseudosim
