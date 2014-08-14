@@ -15,9 +15,11 @@ AKAROA2LIBDIR   = $(AKAROA2DIR)/lib
 
 AM_CPPFLAGS = -O0 -m64 -O -fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD -I../include -I$(CONCERTINCDIR) -I$(CPLEXINCDIR) -I$(AKAROA2INCDIR)
 
-bin_PROGRAMS = schedtests pseudosim
+bin_PROGRAMS = schedtests solver_mgap_edf pseudosim
 schedtests_SOURCES = schedulability.cpp analysis.cpp
 schedtests_LDADD = -L$(CPLEXLIBDIR) -L$(CONCERTLIBDIR) -lconcert -lilocplex -lcplex -lm -lpthread
+solver_mgap_edf_SOURCES = solver_mgap_edf.cpp analysis.cpp
+solver_mgap_edf_LDADD = -L$(CPLEXLIBDIR) -L$(CONCERTLIBDIR) -lconcert -lilocplex -lcplex -lm -lpthread
 pseudosim_SOURCES = pseudosim.cpp analysis.cpp
 pseudosim_LDADD = -L$(AKAROA2LIBDIR) -L$(CPLEXLIBDIR) -L$(CONCERTLIBDIR) -lconcert -lilocplex -lcplex -lm -lpthread -lakaroa -largs -lfl
 
