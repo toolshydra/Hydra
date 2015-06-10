@@ -148,7 +148,7 @@ bool SchedulabilityAnalysis::evaluateResponse(double &spread)
 
 	if (runConfig.getList()) {
 		for (i = 0; i < nTasks; i++)
-			cout << " " << std::fixed << std::setw(15) << std::setprecision(2) << tasks[i].getComputation();
+			cout << " " << std::fixed << std::setw(21) << std::setprecision(6) << tasks[i].getComputation();
 
 		cout << "   [ ";
 	}
@@ -176,11 +176,11 @@ bool SchedulabilityAnalysis::evaluateResponse(double &spread)
 
 	if (runConfig.getList()) {
 		if (ok)
-			cout << "]   " << std::setw(-4) << "OK" << " " <<  std::fixed << std::setw(15) <<
-					std::setprecision(2) << s;
+			cout << "]   " << std::setw(-4) << "OK" << " " <<  std::fixed << std::setw(21) <<
+					std::setprecision(6) << s;
 		else
-			cout << "]   " << std::setw(-4) << "NOT" << " " <<  std::fixed << std::setw(15) <<
-					std::setprecision(2) << -1.0;
+			cout << "]   " << std::setw(-4) << "NOT" << " " <<  std::fixed << std::setw(21) <<
+					std::setprecision(6) << -1.0;
 		cout << endl;
 	}
 
@@ -338,7 +338,7 @@ bool SchedulabilityAnalysis::evaluateUtilization(double bound, double &u)
 					}
 			if (runConfig.getVerbose())
 				cout << "U[" << s << "," << i << "] = " <<
-					std::fixed << std::setw(15) << std::setprecision(4) <<
+					std::fixed << std::setw(21) << std::setprecision(4) <<
 					ui << "% + "<< si << "% = " << ui + si << "%" << endl;
 
 			if ((ui + si) > bound)
@@ -576,20 +576,20 @@ void SchedulabilityAnalysis::printTaskModel()
 		cout << "Cluster: " << s << endl;
 		for (i = 0; i < nProcessors; i++) {
 			cout << "Processor: " << i << endl;
-			cout << std::setw(15) << "Task" <<
-				std::setw(15) << "Priority" <<
-				std::setw(15) << "Computation" <<
-				std::setw(15) << "Period" <<
-				std::setw(15) << "Deadline" <<
-				std::setw(15) << "WCEC" <<
-				std::setw(15) << "Frequency" << endl;
+			cout << std::setw(21) << "Task" <<
+				std::setw(21) << "Priority" <<
+				std::setw(21) << "Computation" <<
+				std::setw(21) << "Period" <<
+				std::setw(21) << "Deadline" <<
+				std::setw(21) << "WCEC" <<
+				std::setw(21) << "Frequency" << endl;
 
 			for (j = 0; j < nTasks; j++)
 				for (k = 0; k < nFrequencies; k++)
 					if (assignment[s][i][j][k] != 0)
-						cout << std::setw(15) << j + 1 <<
+						cout << std::setw(21) << j + 1 <<
 							tasks[j] <<
-							std::setw(15) << frequencies[s][k] << endl;
+							std::setw(21) << frequencies[s][k] << endl;
 		}
 	}
 
@@ -600,21 +600,21 @@ void SchedulabilityAnalysis::printTaskModel()
 	cout << "**************************" << endl;
 	cout << "* Resources in the Model *" << endl;
 	cout << "**************************" << endl;
-	cout << std::setw(15) << "Task";
+	cout << std::setw(21) << "Task";
 	for (i = 0; i < nResources; i++) {
 		string tmp("R");
 		tmp += i + 1;
-		cout << std::setw(15) << tmp;
+		cout << std::setw(21) << tmp;
 	}
 	cout << endl;
 
 	for (i = 0; i < nTasks; i++) {
 		int j;
 
-		cout << std::setw(15) << i + 1;
+		cout << std::setw(21) << i + 1;
 
 		for (j = 0; j < nResources; j++)
-			cout << std::fixed << std::setw(14) << std::setprecision(2) <<
+			cout << std::fixed << std::setw(14) << std::setprecision(6) <<
 				tasks[i].getResource(j) * 100 << "%";
 		cout << endl;
 
@@ -622,7 +622,7 @@ void SchedulabilityAnalysis::printTaskModel()
 	cout << "Resources' priorities" << endl;
 	for (i = 0; i < nResources; i++)
 		cout << "C(R" << std::setw(2) << i + 1 << ") = " <<
-			std::setw(15) << resourcePriorities[i];
+			std::setw(21) << resourcePriorities[i];
 	cout << endl;
 
 }
@@ -644,24 +644,24 @@ void SchedulabilityAnalysis::printTaskInfluencies()
 		cout << "Cluster: " << s << endl;
 		for (i = 0; i < nProcessors; i++) {
 			cout << "Processor: " << i << endl;
-			cout << std::setw(15) << "Task" <<
-				std::setw(15) << "Ai" <<
-				std::setw(15) << "Bi" <<
-				std::setw(15) << "Ji" <<
-				std::setw(15) << "Ii" << endl;
+			cout << std::setw(21) << "Task" <<
+				std::setw(21) << "Ai" <<
+				std::setw(21) << "Bi" <<
+				std::setw(21) << "Ji" <<
+				std::setw(21) << "Ii" << endl;
 
 			for (j = 0; j < nTasks; j++)
 				for (k = 0; k < nFrequencies; k++)
 					if (assignment[s][i][j][k] != 0) {
-						cout << std::setw(15) << j + 1 <<
-							std::fixed << std::setw(15) <<
-								std::setprecision(2) << tasks[j].getIa() <<
-							std::fixed << std::setw(15) <<
-								std::setprecision(2) << tasks[j].getIb() <<
-							std::fixed << std::setw(15) <<
-								std::setprecision(2) << tasks[j].getIj() <<
-							std::fixed << std::setw(15) <<
-								std::setprecision(2) << tasks[j].getIp() <<
+						cout << std::setw(21) << j + 1 <<
+							std::fixed << std::setw(21) <<
+								std::setprecision(6) << tasks[j].getIa() <<
+							std::fixed << std::setw(21) <<
+								std::setprecision(6) << tasks[j].getIb() <<
+							std::fixed << std::setw(21) <<
+								std::setprecision(6) << tasks[j].getIj() <<
+							std::fixed << std::setw(21) <<
+								std::setprecision(6) << tasks[j].getIp() <<
 							endl;
 					}
 		}
@@ -685,38 +685,38 @@ void SchedulabilityAnalysis::printTaskAnalysis()
 		cout << "Cluster: " << s << endl;
 		for (i = 0; i < nProcessors; i++) {
 			cout << "Processor: " << i << endl;
-			cout << std::setw(15) << "Task" <<
-				std::setw(15) << "Computation" <<
-				std::setw(15) << "Ii" <<
-				std::setw(15) << "Ri" <<
-				std::setw(15) << "Pi" <<
-				std::setw(15) << "Di" <<
-				std::setw(15) << "(Di - Ii)" <<
-				std::setw(15) << "(Di - Ri)" << endl;
+			cout << std::setw(21) << "Task" <<
+				std::setw(21) << "Computation" <<
+				std::setw(21) << "Ii" <<
+				std::setw(21) << "Ri" <<
+				std::setw(21) << "Pi" <<
+				std::setw(21) << "Di" <<
+				std::setw(21) << "(Di - Ii)" <<
+				std::setw(21) << "(Di - Ri)" << endl;
 
 			for (j = 0; j < nTasks; j++)
 				for (k = 0; k < nFrequencies; k++)
 					if (assignment[s][i][j][k] != 0) {
-						cout << std::setw(15) << j + 1 <<
-							std::fixed << std::setw(15) <<
-								std::setprecision(2) <<
+						cout << std::setw(21) << j + 1 <<
+							std::fixed << std::setw(21) <<
+								std::setprecision(6) <<
 								tasks[j].getComputation() <<
-							std::fixed << std::setw(15) <<
-								std::setprecision(2) << tasks[j].getIp() <<
-							std::fixed << std::setw(15) <<
-								std::setprecision(2) <<
+							std::fixed << std::setw(21) <<
+								std::setprecision(6) << tasks[j].getIp() <<
+							std::fixed << std::setw(21) <<
+								std::setprecision(6) <<
 								tasks[j].getResponse() <<
-							std::fixed << std::setw(15) <<
-								std::setprecision(2) <<
+							std::fixed << std::setw(21) <<
+								std::setprecision(6) <<
 								tasks[j].getPeriod() <<
-							std::fixed << std::setw(15) <<
-								std::setprecision(2) <<
+							std::fixed << std::setw(21) <<
+								std::setprecision(6) <<
 								tasks[j].getDeadline() <<
-							std::fixed << std::setw(15) <<
-								std::setprecision(2) <<
+							std::fixed << std::setw(21) <<
+								std::setprecision(6) <<
 								tasks[j].getDeadline() - tasks[j].getIp() <<
-							std::fixed << std::setw(15) <<
-								std::setprecision(2) <<
+							std::fixed << std::setw(21) <<
+								std::setprecision(6) <<
 							tasks[j].getDeadline() - tasks[j].getResponse() <<
 							endl;
 					}
