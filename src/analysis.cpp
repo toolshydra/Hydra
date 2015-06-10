@@ -111,7 +111,8 @@ void SchedulabilityAnalysis::readModel()
 
 	file >> ntasks >> nresources >> Lp;
 	file >> frequencies;
-	file >> voltages;
+	file >> pdyn ;
+	file >> pidle;
 
 	i = 0;
 	do {
