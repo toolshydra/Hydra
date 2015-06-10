@@ -62,7 +62,7 @@ private:
 public:
 	/* Constructors */
 	SchedulabilityAnalysis(IloEnv env, runInfo runtime);
-	SchedulabilityAnalysis(IloEnv env, runInfo runtime, const char *filename);
+	SchedulabilityAnalysis(IloEnv env, runInfo runtime, const char *filename, bool useAssignment);
 	SchedulabilityAnalysis(IloEnv env, runInfo runtime, int ntask,
 		int nresources, double lp, IloNumArray2 freqs, IloNumArray2 volts,
 		vector <class Task> tset, IloNumArray4 assig);

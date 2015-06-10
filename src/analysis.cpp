@@ -32,16 +32,21 @@ SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime)
 	distributeTaskFrequencies();
 }
 
-SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime, const char *filename)
-	:frequencies(env), voltages(env), resourcePriorities(env), assignment(env),
+SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime, const char *filename,
+						bool useAssignment)
+	:frequencies(env), voltages(env), pdyn(env), pidle(env), resourcePriorities(env), assignment(env),
 	nClusters(0), nProcessors(0), nTasks(0), nFrequencies(0), nResources(0),
 	Lp(0.0), runConfig(runtime), fileModel(filename), loaded(false)
 {
+
 	if (runConfig.getVerbose())
 		cout << runConfig;
 
 	readModel();
-	distributeTaskFrequencies();
+
+	if (useAssignment)
+		distributeTaskFrequencies();
+
 }
 
 SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime, int ntask,

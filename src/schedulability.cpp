@@ -158,7 +158,7 @@ int main(int argc, char *argv[])
 		}
 	} while (next_option != -1);
 
-	SchedulabilityAnalysis sched(env, runtime, filename);
+	SchedulabilityAnalysis sched(env, runtime, filename, true);
 	sched.computeAnalysis();
 
 	/* Compute output data */
