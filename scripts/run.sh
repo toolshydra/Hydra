@@ -4,8 +4,8 @@ AKRUN=$AK_HOME/bin/akrun
 AK_INSTANCES=16
 AK_PARAMS=models/simulation_sample/ak_params.txt
 
-SCHED_HOME=/Users/evalentin/Documents/doutorado/algorithms/schedulability
-SIM=$SCHED_HOME/src/pseudosim
+SCHED_HOME=/Users/evalentin/Documents/doutorado/algorithms/Hydra/
+SIM=$SCHED_HOME/src/pseudosim_solvers
 LOG=$SCHED_HOME/results/time_energy_all_zero_ui
 
 LP=0.45
