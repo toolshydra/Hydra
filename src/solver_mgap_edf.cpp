@@ -1,7 +1,17 @@
+#include <sys/time.h>
 #include <ilcplex/ilocplex.h>
 #include <gcd_hash.h>
 
 ILOSTLBEGIN
+
+static long get_execution_time(struct timeval s, struct timeval e)
+{
+	struct timeval diff;
+
+	timersub(&e, &s, &diff);
+
+	return diff.tv_sec * 1000000 + diff.tv_usec;
+}
 
 unsigned long long gcd(unsigned long long a, unsigned long long b)
 {
@@ -74,7 +84,11 @@ long long computeLCM(IloNumArray periods)
 
 int main(int argc, char **argv)
 {
+	struct timeval st, e;
 	IloEnv env;
+	bool good;
+	long etimes;
+	double energyS;
 	try {
 		IloInt i, j, k;
 		double alpha, bound;
@@ -158,22 +172,29 @@ int main(int argc, char **argv)
 		obj.end();
 
 		IloCplex cplex(env);
+		cplex.setOut(env.getNullStream());
 		cplex.extract(model);
+		gettimeofday(&st, NULL);
 		cplex.solve();
+		gettimeofday(&e, NULL);
+		etimes = get_execution_time(st, e);
 
-		cplex.out() << "Solution status: " << cplex.getStatus() << endl;
+		if (cplex.getStatus() == IloAlgorithm::Feasible ||
+				cplex.getStatus() == IloAlgorithm::Optimal) {
+			bool ret = cplex.getObjValue() >= 0;
+			if (ret)
+				energyS = cplex.getObjValue();
+			good = ret;
+		} else {
+			good = false;
+		}
 
-		IloNum tolerance = cplex.getParam(IloCplex::EpInt);
-		cplex.out() << "Optimal System Energy: " << cplex.getObjValue() << endl;
-		for(i = 0; i < nAgents; i++)
-			for(j = 0; j < nTasks; j++)
-				for(k = 0; k < nLevels; k++)
-					if (cplex.getValue(x[i][j][k]) == 1)
-						cplex.out() << "Task[" << j
-							<< "] runs in processor " << i
-							<< " at level [" << k << "] ("
-							<< frequency[i][k] << "Hz@"
-							<< voltage[i][k] << "V)" << endl;
+		cplex.end();
+		model.end();
+
+		cout << good << endl;
+		cout << etimes << endl;
+		cout << energyS << endl;
 	}
 	catch(IloException& e) {
 		cerr  << " ERROR: " << e << endl;
