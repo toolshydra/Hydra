@@ -334,11 +334,13 @@ bool SchedulabilityAnalysis::evaluateUtilization(double bound, double &u)
 		for (i = 0; i < nProcessors; i++) {
 			double ui = 0.0;
 			double si = 0.0;
+			int n = 0;
 
 			for (j = 0; j < nTasks; j++)
 				for (k = 0; k < nFrequencies; k++)
 					if (assignment[s][i][j][k] != 0) {
 						ui += tasks[j].getUtilization();
+						n++;
 						if (Lp > 0.0)
 							si += tasks[j].getIa() / tasks[j].getPeriod();
 					}
@@ -347,7 +349,7 @@ bool SchedulabilityAnalysis::evaluateUtilization(double bound, double &u)
 					std::fixed << std::setw(21) << std::setprecision(4) <<
 					ui << "% + "<< si << "% = " << ui + si << "%" << endl;
 
-			if ((ui + si) > bound)
+			if ((ui + si) > ((double)n * (pow(2.0, 1.0 / (double)n) - 1.0)))
 				return false;
 
 			sum += (ui + si);
@@ -371,7 +373,7 @@ void SchedulabilityAnalysis::distributeTaskFrequencies()
 			for (j = 0; j < nTasks; j++)
 				for (k = 0; k < nFrequencies; k++)
 					if (assignment[s][i][j][k] != 0)
-						tasks[j].setComputation(frequencies[s][k]);
+						tasks[j].setComputation(frequencies[i][k]);
 }
 
 /*
@@ -595,7 +597,7 @@ void SchedulabilityAnalysis::printTaskModel()
 					if (assignment[s][i][j][k] != 0)
 						cout << std::setw(21) << j + 1 <<
 							tasks[j] <<
-							std::setw(21) << frequencies[s][k] << endl;
+							std::setw(21) << frequencies[i][k] << endl;
 		}
 	}
 
