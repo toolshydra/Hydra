@@ -1,8 +1,30 @@
 #include <sys/time.h>
 #include <ilcplex/ilocplex.h>
+#include <getopt.h>
+#include <errno.h>
 #include <gcd_hash.h>
 
 ILOSTLBEGIN
+
+static const char *short_options = "hstm:";
+static const struct option long_options[] = {
+	{ "help",     0, NULL, 'h' },
+	{ "model",     0, NULL, 'm' },
+	{ "solution",     0, NULL, 's' },
+	{ "statistics",     0, NULL, 't' },
+	{ NULL,       0, NULL, 0   },   /* Required at end of array.  */
+};
+
+static void print_usage(char *program_name)
+{
+	printf("Usage: %s  options\n", program_name);
+	printf(
+	"  -h  --help                             Display this usage information.\n"
+	"  -m  --model=<modelfile>                Read model specification from modelfile.\n"
+	"  -s  --solution                         Print at the end the found solution.\n"
+	"  -t  --statistics                       Print at the end the feasibility, processing time, and minimum energy found.\n");
+
+}
 
 static long get_execution_time(struct timeval s, struct timeval e)
 {
@@ -85,10 +107,42 @@ long long computeLCM(IloNumArray periods)
 int main(int argc, char **argv)
 {
 	struct timeval st, e;
+	const char* filename  = "mgap-rm.dat";
 	IloEnv env;
-	bool good;
+	bool good, stats = false, solution = false;
 	long etimes;
 	double energyS;
+	int next_option;
+
+	/* Read command line options */
+	do {
+		next_option = getopt_long (argc, argv, short_options,
+						long_options, NULL);
+		switch (next_option) {
+		default:    /* Something else: unexpected.  */
+		case '?':   /* The user specified an invalid option.  */
+		case 'h':   /* -h or --help */
+			print_usage(argv[0]);
+			return 0;
+		case 'm':   /* -m or --model */
+			if (!optarg) {
+				fprintf(stderr, "Specify file with model.\n");
+				print_usage(argv[0]);
+				return -EINVAL;
+			}
+			filename = optarg;
+			break;
+		case 's':   /* -s or --solution */
+			solution = true;
+			break;
+		case 't':   /* -t or --statistics */
+			stats = true;
+			break;
+		case -1:    /* Done with options.  */
+			break;
+		}
+	} while (next_option != -1);
+
 	try {
 		IloInt i, j, k;
 		double alpha, bound;
@@ -96,11 +150,8 @@ int main(int argc, char **argv)
 		IloNumArray2 cycles(env), voltage(env), frequency(env);
 		IloNumArray period(env);
 		long long LCM;
-
-		const char* filename  = "mgap-edf.dat";
-		if (argc > 1)
-			filename = argv[1];
 		ifstream file(filename);
+
 		if (!file) {
 			cerr << "ERROR: could not open file '" << filename
 				<< "' for reading" << endl;
@@ -189,12 +240,27 @@ int main(int argc, char **argv)
 			good = false;
 		}
 
+		if (stats) {
+			cout << good << endl;
+			cout << etimes << endl;
+			cout << energyS << endl;
+		}
+
+		if (solution) {
+			cout << "Optimal System Energy: " << cplex.getObjValue() << endl;
+			for(i = 0; i < nAgents; i++)
+				for(j = 0; j < nTasks; j++)
+					for(k = 0; k < nLevels; k++)
+						if (cplex.getValue(x[i][j][k]) == 1)
+							cout << "Task[" << j
+								<< "] runs in processor " << i
+								<< " at level [" << k << "] ("
+								<< frequency[i][k] << "Hz@"
+								<< voltage[i][k] << "V)" << endl;
+		}
+
 		cplex.end();
 		model.end();
-
-		cout << good << endl;
-		cout << etimes << endl;
-		cout << energyS << endl;
 	}
 	catch(IloException& e) {
 		cerr  << " ERROR: " << e << endl;
