@@ -63,7 +63,7 @@ static double inline next_ak(double min, double max) {
 	return v;
 }
 
-static const char *short_options = "hvpf:a:u:r:n:m:l:c";
+static const char *short_options = "hvpa:u:f:s:r:n:l:m:c";
 static const struct option long_options[] = {
 	{ "help",     0, NULL, 'h' },
 	{ "verbose",  0, NULL, 'v' },
@@ -71,6 +71,7 @@ static const struct option long_options[] = {
 	{ "max-ui",  required_argument, NULL, 'a' },
 	{ "u-total",  required_argument, NULL, 'u' },
 	{ "freq-file",  required_argument, NULL, 'f' },
+	{ "solvers-file",  required_argument, NULL, 's' },
 	{ "range-file",  required_argument, NULL, 'r' },
 	{ "task-count",  required_argument, NULL, 'n' },
 	{ "switch-latency",  required_argument, NULL, 'l' },
@@ -88,6 +89,7 @@ static void print_usage(char *program_name)
 	"  -c  --compare-no-lp                    Compare the difference to test without A_i.\n"
 	"  -p  --compute-power                    Estimate system average energy consumption.\n"
 	"  -f  --freq-file=<file-name>            File name with frequencies per cluster.\n"
+	"  -s  --solvers-file=<file-name>         File name with solvers command line.\n"
 	"  -r  --range-file=<file-name>           File name with task model ranges.\n"
 	"  -n  --task-count=<task-count>          Number of tasks to be generated per task model.\n"
 	"  -l  --switch-latency=<Lp>              Switching Latency.\n"
@@ -127,6 +129,54 @@ static int read_frequencies(char *freq_file_name, IloNumArray2 &freqs, IloNumArr
 	ifstream file(freq_file_name);
 
 	file >> freqs >> volts;
+
+	return 0;
+}
+
+static int read_solvers_config(char *solvers_file_name, int &nsolvers, int &nparams,
+				vector <string> &solvers)
+{
+	ifstream file(solvers_file_name);
+	string line;
+	char str[2];
+	int i;
+
+	if (!solvers_file_name) {
+		cerr << "You have to specify the solvers config file (-s)" <<
+				endl;
+		return -EINVAL;
+	}
+
+	if (!file.is_open()) {
+		cerr << "Error reading solvers config file " <<
+			solvers_file_name << endl;
+		return -EINVAL;
+	}
+
+	nsolvers = 0;
+
+	file >> nsolvers >> nparams;
+	if (nsolvers <= 0 || nparams <= 0) {
+		cerr << "Wrong solvers config file " <<
+			solvers_file_name << endl;
+		return -EINVAL;
+	}
+
+	solvers.clear();
+	/* skip first with nsolvers nparams */
+	std::getline(file, line);
+	for (i = 0; i < nsolvers; i++) {
+
+		if (file.eof()) {
+			cerr << "Wrong solvers config file " <<
+				solvers_file_name << endl;
+			return -EINVAL;
+		}
+
+		std::getline(file, line);
+		solvers.push_back(line);
+	}
+	file.close();
 
 	return 0;
 }
@@ -205,14 +255,14 @@ static int gen_task_model(int ntasks, int nprocs, IloEnv env, IloNumArray &prior
 	return 0;
 }
 
-void execute_rm_enrico(struct thread_data *tdata)
+void execute_solver(struct thread_data *tdata, string solver_cmd)
 {
 	std::string result = "", filename = "";
 	ofstream mfile;
 	FILE* pipe;
 	char buffer[128];
 
-	pipe = popen("mktemp /tmp/fileXXX", "r");
+	pipe = popen("mktemp /tmp/fileXXXXXXXX", "r");
 	if (!pipe)
 		return;
 
@@ -234,7 +284,7 @@ void execute_rm_enrico(struct thread_data *tdata)
 	mfile << *(tdata->freqs) << endl;
 	mfile.close();
 
-	result = std::string("/home/evalentin/Hydra/src/solver_mgap_rm_enrico ") + filename;
+	result = solver_cmd + " " + filename;
 	pipe = popen(result.c_str(), "r");
 	if (!pipe)
 		return;
@@ -250,52 +300,7 @@ void execute_rm_enrico(struct thread_data *tdata)
 					&tdata->etimes,
 					&tdata->energyS);
 
-	remove(filename.c_str());
-}
-
-void execute_edf(struct thread_data *tdata)
-{
-	std::string result = "", filename = "";
-	ofstream mfile;
-	FILE* pipe;
-	char buffer[128];
-
-	pipe = popen("mktemp /tmp/fileXXX", "r");
-	if (!pipe)
-		return;
-
-	while (!feof(pipe)) {
-		if (fgets(buffer, 128, pipe) != NULL)
-			filename += buffer;
-	}
-	pclose(pipe);
-
-	filename.erase(filename.size() - 1);
-
-	mfile.open(filename.c_str());
-	mfile << "1 0.69" << endl;
-	mfile << *(tdata->period) << endl;
-	mfile << *(tdata->cycles) << endl;
-	mfile << *(tdata->volts) << endl;
-	mfile << *(tdata->freqs) << endl;
-	mfile.close();
-
-	result = std::string("/home/evalentin/Hydra/src/solver_mgap_edf ") + filename;
-	pipe = popen(result.c_str(), "r");
-	if (!pipe)
-		return;
-
-	result = "";
-	while (!feof(pipe)) {
-		if (fgets(buffer, 128, pipe) != NULL)
-			result += buffer;
-	}
-	pclose(pipe);
-
-	sscanf(result.c_str(), "%d %ld %lf", &tdata->good,
-					&tdata->etimes,
-					&tdata->energyS);
-	remove(filename.c_str());
+	system((std::string("rm -rf ") + filename).c_str());
 }
 
 void leave(int sig) {
@@ -314,11 +319,15 @@ int main(int argc, char *argv[])
 	int nprocs = 0;
 	int ntasks = 0;
 	int nfreqs = 0;
+	int nsolvers = 0;
+	int nparams = 0;
 	int next_option;
 	int err = 0;
 	int s, i, j, k;
 	char *freq_file_name = NULL;
+	char *solvers_file_name = NULL;
 	char *range_file_name = NULL;
+	vector <string> solvers;
 
 	(void) signal(SIGTERM,leave);
 
@@ -389,6 +398,14 @@ int main(int argc, char *argv[])
 			}
 			freq_file_name = optarg;
 			break;
+		case 's':   /* -s or --solver-file */
+			if (!optarg) {
+				fprintf(stderr, "Specify file with solvers configs.\n");
+				print_usage(argv[0]);
+				return -EINVAL;
+			}
+			solvers_file_name = optarg;
+			break;
 		case 'r':   /* -r or --range-file */
 			if (!optarg) {
 				fprintf(stderr, "Specify file with ranges.\n");
@@ -401,6 +418,11 @@ int main(int argc, char *argv[])
 			break;
 		}
 	} while (next_option != -1);
+
+	err = read_solvers_config(solvers_file_name, nsolvers,
+					nparams, solvers);
+	if (err < 0)
+		return err;
 
 	tdata = new (struct thread_data);
 	tdata->env = &env;
@@ -443,7 +465,14 @@ int main(int argc, char *argv[])
 	for (int j = 0; j < nprocs; j++)
 		tdata->cycles[0][j] = IloNumArray(env, ntasks);
 
-	AkDeclareParameters(6);
+	/*
+	 * For now we are assuming a fixed number of parameters
+	 * per solver:
+	 * 1. Energy
+	 * 2. Execution time
+	 * 3. Feasibility
+	 */
+	AkDeclareParameters(nsolvers * nparams);
 
 	while (!AkSimulationOver()) {
 
@@ -463,19 +492,15 @@ int main(int argc, char *argv[])
 			return err;
 		}
 
-		execute_edf(tdata);
-		if (tdata->good) {
-			AkParamObservation(1, tdata->energyS);
-			AkParamObservation(2, tdata->etimes);
-		}
-		AkParamObservation(3, tdata->good);
+		for (i = 0; i < nsolvers; i++) {
+			execute_solver(tdata, solvers[i]);
 
-		execute_rm_enrico(tdata);
-		if (tdata->good) {
-			AkParamObservation(4, tdata->energyS);
-			AkParamObservation(5, tdata->etimes);
+			if (tdata->good) {
+				AkParamObservation(i * 3 + 1, tdata->energyS);
+				AkParamObservation(i * 3 + 2, tdata->etimes);
+			}
+			AkParamObservation(i * 3 + 3, tdata->good);
 		}
-		AkParamObservation(6, tdata->good);
 	}
 
 	return err;
