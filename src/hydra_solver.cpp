@@ -63,11 +63,13 @@ static double inline next_ak(double min, double max) {
 	return v;
 }
 
-static const char *short_options = "hvpf:r:n:m:l:c";
+static const char *short_options = "hvpf:a:u:r:n:m:l:c";
 static const struct option long_options[] = {
 	{ "help",     0, NULL, 'h' },
 	{ "verbose",  0, NULL, 'v' },
 	{ "compute-power",  0, NULL, 'p' },
+	{ "max-ui",  required_argument, NULL, 'a' },
+	{ "u-total",  required_argument, NULL, 'u' },
 	{ "freq-file",  required_argument, NULL, 'f' },
 	{ "range-file",  required_argument, NULL, 'r' },
 	{ "task-count",  required_argument, NULL, 'n' },
@@ -125,6 +127,56 @@ static int read_frequencies(char *freq_file_name, IloNumArray2 &freqs, IloNumArr
 	ifstream file(freq_file_name);
 
 	file >> freqs >> volts;
+
+	return 0;
+}
+
+/*
+ * read_task_model: Reads needed info
+ * @parameter ntasks: number of tasks
+ * @parameter tasks: array of tasks, which will be filled up with task values
+ * @parameter nresources: integer which represents the number of resources
+ * @complexity: O(ntasks x nresources)
+ */
+static int gen_utilization_model(double max_u, double max_ui, int nprocs,
+				int max_freq, /*higher first, per proc, between procs*/
+				IloNumArray &priority,
+				IloNumArray &period,
+				IloNumArray &deadline,
+				IloNumArray2 &cycles)
+{
+	int i, j;
+	double cycle_factor[nprocs], cur_u;
+
+	priority.clear();
+	period.clear();
+	deadline.clear();
+	for (j = 0; j < nprocs; j++) {
+		cycles[j].clear();
+		cycle_factor[j] = next_ak(0.8, 0.9);
+	}
+	cycle_factor[0] = 1.0;
+	i = 0; cur_u = 0.0;
+	while(cur_u < max_u) {
+		double p_i, u_i, c_i, cycles_i;
+
+		u_i = next_ak(0.001, max_ui);
+		if ((u_i + cur_u) > max_u)
+			u_i -= (u_i + cur_u) - max_u;
+		p_i = next_ak(period_min, period_max);
+		c_i = u_i * p_i; /* at max speed */
+		cycles_i = c_i * max_freq;
+
+		priority.add(i);
+		deadline.add(p_i);
+		period.add(p_i); /* period == deadline */
+		cycles[0].add(cycles_i);
+		for (j = 1; j < nprocs; j++)
+			cycles[j].add(cycles_i * cycle_factor[j]);
+
+		i++;
+		cur_u += u_i;
+	}
 
 	return 0;
 }
@@ -258,8 +310,7 @@ int main(int argc, char *argv[])
 	struct thread_data *tdata;
 	IloEnv env;
 	struct runInfo runtime;
-	double Lp = 0.0;
-	int nclusters = 0;
+	double Lp = 0.0, max_ui = 0.0, u_total = 0.0;
 	int nprocs = 0;
 	int ntasks = 0;
 	int nfreqs = 0;
@@ -290,6 +341,24 @@ int main(int argc, char *argv[])
 			break;
 		case 'p':   /* -p or --compute-power */
 			compute_power = true;
+			break;
+		case 'a':   /* -a or --max-ui */
+			if (!optarg) {
+				printf("Specify the maximum utilization per task (<=1.0).\n");
+				return -EINVAL;
+			}
+			max_ui = strtod(optarg, NULL);
+			if (max_ui > 1.0) {
+				printf("Specify the maximum utilization per task (<=1.0).\n");
+				return -EINVAL;
+			}
+			break;
+		case 'u':   /* -u or --u-total */
+			if (!optarg) {
+				printf("Specify the maximum system utilization (<=nprocs).\n");
+				return -EINVAL;
+			}
+			u_total = strtod(optarg, NULL);
 			break;
 		case 'l':   /* -l or --switch-latency */
 			if (!optarg) {
@@ -353,11 +422,16 @@ int main(int argc, char *argv[])
 	if (err < 0)
 		return err;
 
-	nclusters = tdata->freqs->getSize();
+	nprocs = tdata->freqs->getSize();
 	nfreqs = (*tdata->freqs)[0].getSize();
 
-	if (nclusters == 0 || ntasks == 0 || nprocs == 0 || nfreqs == 0) {
+	if (ntasks == 0 || nprocs == 0 || nfreqs == 0) {
 		print_usage(argv[0]);
+		return -EINVAL;
+	}
+
+	if (u_total > nprocs) {
+		printf("Specify the maximum system utilization (<=nprocs).\n");
 		return -EINVAL;
 	}
 
@@ -374,7 +448,14 @@ int main(int argc, char *argv[])
 	while (!AkSimulationOver()) {
 
 		/* O(nfrequencies) + O(ntasks x nresources) */
-		err = gen_task_model(ntasks, nprocs, env, *(tdata->priority),
+		if (u_total > 0)
+			err = gen_utilization_model(u_total, max_ui,
+					nprocs, (*tdata->freqs)[0][0],
+					*(tdata->priority),
+					*(tdata->period), *(tdata->deadline),
+					*(tdata->cycles));
+		else
+			err = gen_task_model(ntasks, nprocs, env, *(tdata->priority),
 					*(tdata->period), *(tdata->deadline),
 					*(tdata->cycles));
 		if (err < 0) {
