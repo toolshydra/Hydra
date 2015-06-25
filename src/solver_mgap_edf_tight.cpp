@@ -224,6 +224,7 @@ string getFileName(void)
 	pclose(pipe);
 
 	filename.erase(filename.size() - 1);
+	system((std::string("rm -rf ") + filename).c_str());
 
 	return filename + ".lp";
 }
