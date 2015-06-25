@@ -212,7 +212,7 @@ void execute_rm_enrico(struct thread_data *tdata)
 	FILE* pipe;
 	char buffer[128];
 
-	pipe = popen("tempfile", "r");
+	pipe = popen("mktemp /tmp/fileXXX", "r");
 	if (!pipe)
 		return;
 
@@ -260,7 +260,7 @@ void execute_edf(struct thread_data *tdata)
 	FILE* pipe;
 	char buffer[128];
 
-	pipe = popen("tempfile", "r");
+	pipe = popen("mktemp /tmp/fileXXX", "r");
 	if (!pipe)
 		return;
 
