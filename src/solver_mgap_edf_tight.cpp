@@ -20,8 +20,7 @@ static IloNumArray priority;
 static IloNumArray period;
 static IloNumArray Deadline;
 
-
-ILOCPLEXGOAL1(ResponseGoal, IloNumVarArray, vars) {
+ILOINCUMBENTCALLBACK1(TightCallback, IloNumVarArray, vars) {
 	struct runInfo runtime;
 	double sp, bound;
 	int s, i, j, k;
@@ -29,16 +28,13 @@ ILOCPLEXGOAL1(ResponseGoal, IloNumVarArray, vars) {
 	IloNumArray4 dec(getEnv(), 1);
 	IloNumArray x;
 	IloNumArray obj;
-	IntegerFeasibilityArray feas;
 
-	runtime.setVerbose(false);
+	runtime.setVerbose(true);
 
 	x    = IloNumArray(getEnv());
 	obj  = IloNumArray(getEnv());
-	feas = IntegerFeasibilityArray(getEnv());
 	getValues(x, vars);
 	getObjCoefs(obj, vars);
-	getFeasibilities(feas, vars);
 
 	for (s = 0; s < 1; s++) {
 		dec[s] = IloNumArray3(getEnv(), nAgents);
@@ -52,6 +48,7 @@ ILOCPLEXGOAL1(ResponseGoal, IloNumVarArray, vars) {
 			}
 		}
 	}
+	tasks.clear();
 	for (j = 0; j < nTasks; j++) {
 		Task t(getEnv());
 
@@ -75,38 +72,7 @@ ILOCPLEXGOAL1(ResponseGoal, IloNumVarArray, vars) {
 					frequency, voltage, tasks, dec);
 
 	if (sched.evaluateUtilization(1.0, sp) == false)
-		return IloCplex::GoalI::FailGoal(getEnv());
-
-	IloInt bestj  = -1;
-	IloNum maxinf = 0.0;
-	IloNum maxobj = 0.0;
-	IloInt cols = vars.getSize();
-	for (IloInt j = 0; j < cols; j++) {
-		if ( feas[j] == Infeasible ) {
-			IloNum xj_inf = x[j] - IloFloor (x[j]);
-			if ( xj_inf > 0.5 )
-				xj_inf = 1.0 - xj_inf;
-			if ( xj_inf >= maxinf                             &&
-					(xj_inf > maxinf || IloAbs (obj[j]) >= maxobj)  ) {
-				bestj  = j;
-				maxinf = xj_inf;
-				maxobj = IloAbs (obj[j]);
-			}
-		}
-	}
-
-	IloCplex::Goal res;
-	if ( bestj >= 0 ) {
-		res = AndGoal(OrGoal(vars[bestj] >= IloFloor(x[bestj])+1,
-					vars[bestj] <= IloFloor(x[bestj])),
-				this);
-	}
-
-	x.end();
-	obj.end();
-	feas.end();
-
-	return res;
+		reject();
 }
 
 static const char *short_options = "hstm:";
@@ -335,6 +301,7 @@ int main(int argc, char **argv)
 				for(k = 0; k < nLevels; k++)
 					obj += energy[i][j][k] * x[i][j][k];
 		model.add(IloMinimize(env, obj));
+		obj.end();
 
 		for(j = 0; j < nTasks; j++) {
 			IloExpr v(env);
@@ -345,7 +312,20 @@ int main(int argc, char **argv)
 			v.end();
 		}
 
-		obj.end();
+		for(i = 0; i < nAgents; i++) {
+			IloExpr v(env);
+			for(j = 0; j < nTasks; j++) {
+				for(k = 0; k < nLevels; k++)
+					v += U[i][j][k] * x[i][j][k];
+			}
+			/*
+			 * Relaxed at this point.
+			 * The incumbent callback will make sure
+			 * we use the right limit.
+			 */
+			model.add(v <= 1.0); /* Each agent has a budget */
+			v.end();
+		}
 
 		std::string fname = "";
 		fname = getFileName();
@@ -364,11 +344,13 @@ int main(int argc, char **argv)
 		IloRangeArray  _rng(env);
 
 		_cplex.setOut(env.getNullStream());
+		_cplex.setParam(_cplex.PreInd, 0);
+		_cplex.use(TightCallback(env, _var));
 		_cplex.importModel(_model, fname.c_str(), _obj, _var, _rng);
 		system((std::string("rm -rf ") + fname).c_str());
 		_cplex.extract(_model);
 		gettimeofday(&st, NULL);
-		_cplex.solve(ResponseGoal(env, _var));
+		_cplex.solve();
 		gettimeofday(&e, NULL);
 		etimes = get_execution_time(st, e);
 
