@@ -29,7 +29,8 @@ ILOINCUMBENTCALLBACK1(TightCallback, IloNumVarArray, vars) {
 	IloNumArray x;
 	IloNumArray obj;
 
-	runtime.setVerbose(true);
+	runtime.setVerbose(false);
+	runtime.setList(false);
 
 	x    = IloNumArray(getEnv());
 	obj  = IloNumArray(getEnv());
