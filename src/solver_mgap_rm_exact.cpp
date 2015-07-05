@@ -20,22 +20,15 @@ static IloNumArray priority;
 static IloNumArray period;
 static IloNumArray Deadline;
 
-ILOINCUMBENTCALLBACK1(TightCallback, IloNumVarArray, vars) {
+ILOINCUMBENTCALLBACK1(TightCallback, IloArray<IloArray<IloNumVarArray> > &, vars) {
 	struct runInfo runtime;
 	double sp;
 	int s, i, j, k;
 	vector <class Task> tasks;
 	IloNumArray4 dec(getEnv(), 1);
-	IloNumArray x;
-	IloNumArray obj;
 
 	runtime.setVerbose(false);
 	runtime.setList(false);
-
-	x    = IloNumArray(getEnv());
-	obj  = IloNumArray(getEnv());
-	getValues(x, vars);
-	getObjCoefs(obj, vars);
 
 	for (s = 0; s < 1; s++) {
 		dec[s] = IloNumArray3(getEnv(), nAgents);
@@ -44,7 +37,7 @@ ILOINCUMBENTCALLBACK1(TightCallback, IloNumVarArray, vars) {
 			for (j = 0; j < nTasks; j++) {
 				dec[s][i][j] = IloNumArray(getEnv(), nLevels, 0, 1, ILOINT);
 				for (k = 0; k < nLevels; k++) {
-					dec[s][i][j][k] = x[i * (nTasks * nLevels) + j * nLevels + k];
+					dec[s][i][j][k] = getValue(vars[i][j][k]);
 				}
 			}
 		}
@@ -173,28 +166,6 @@ long long computeLCM(IloNumArray periods)
 	}
 
 	return LCM;
-}
-
-string getFileName(void)
-{
-	std::string filename = "";
-	FILE* pipe;
-	char buffer[128];
-
-	pipe = popen("mktemp /tmp/fileXXXX", "r");
-	if (!pipe)
-		return std::string("");
-
-	while (!feof(pipe)) {
-		if (fgets(buffer, 128, pipe) != NULL)
-			filename += buffer;
-	}
-	pclose(pipe);
-
-	filename.erase(filename.size() - 1);
-	system((std::string("rm -rf ") + filename).c_str());
-
-	return filename + ".lp";
 }
 
 int main(int argc, char **argv)
@@ -329,38 +300,21 @@ int main(int argc, char **argv)
 			v.end();
 		}
 
-		std::string fname = "";
-		fname = getFileName();
-
 		IloCplex cplex(env);
 		cplex.setOut(env.getNullStream());
 		cplex.extract(model);
-		cplex.exportModel(fname.c_str());
-		cplex.end();
-		model.end();
 
-		IloCplex       _cplex(env);
-		IloModel       _model;
-		IloObjective   _obj;
-		IloNumVarArray _var(env);
-		IloRangeArray  _rng(env);
-
-		_cplex.setOut(env.getNullStream());
-		_cplex.setParam(_cplex.PreInd, 0);
-		_cplex.use(TightCallback(env, _var));
-		_cplex.importModel(_model, fname.c_str(), _obj, _var, _rng);
-		system((std::string("rm -rf ") + fname).c_str());
-		_cplex.extract(_model);
 		gettimeofday(&st, NULL);
-		_cplex.solve();
+		cplex.use(TightCallback(env, x));
+		cplex.solve();
 		gettimeofday(&e, NULL);
 		etimes = get_execution_time(st, e);
 
-		if (_cplex.getStatus() == IloAlgorithm::Feasible ||
-				_cplex.getStatus() == IloAlgorithm::Optimal) {
-			bool ret = _cplex.getObjValue() >= 0;
+		if (cplex.getStatus() == IloAlgorithm::Feasible ||
+				cplex.getStatus() == IloAlgorithm::Optimal) {
+			bool ret = cplex.getObjValue() >= 0;
 			if (ret)
-				energyS = _cplex.getObjValue();
+				energyS = cplex.getObjValue();
 			good = ret;
 		} else {
 			good = false;
@@ -373,11 +327,11 @@ int main(int argc, char **argv)
 		}
 
 		if (solution) {
-			cout << "Optimal System Energy: " << _cplex.getObjValue() << endl;
+			cout << "Optimal System Energy: " << cplex.getObjValue() << endl;
 			for(i = 0; i < nAgents; i++)
 				for(j = 0; j < nTasks; j++)
 					for(k = 0; k < nLevels; k++)
-						if (_cplex.getValue(_var[i * (nTasks * nLevels) + j * nLevels + k]) == 1)
+						if (cplex.getValue(x[i][j][k]) == 1)
 							cout << "Task[" << j
 								<< "] runs in processor " << i
 								<< " at level [" << k << "] ("
@@ -385,8 +339,8 @@ int main(int argc, char **argv)
 								<< voltage[i][k] << "V)" << endl;
 		}
 
-		_cplex.end();
-		_model.end();
+		cplex.end();
+		model.end();
 	}
 	catch(IloException& e) {
 		cerr  << " ERROR: " << e << endl;
