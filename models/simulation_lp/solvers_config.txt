@@ -1,0 +1,3 @@
+2 3
+/home/eduardo.valentin/Hydra/src/solver_mgap_rm_exact -tm
+/home/eduardo.valentin/Hydra/src/solver_mgap_edf_tight -tm
