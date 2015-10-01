@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <math.h>
+#include <float.h>
 
 #include <analysis.h>
 #include <gcd_hash.h>
@@ -436,36 +437,6 @@ void SchedulabilityAnalysis::computeExclusionInfluency()
 
 }
 
-/*
- * compute_precedence_influency: Compute precedence influency of each task
- * @parameter tset: set of tasks
- * @complexity: O(ntasks ^ 2)
- */
-
-/* Usable AlmostEqual function */
-static inline int almostequal2s_complement(double A, double B, long long maxulps)
-{
-	long long aint;
-	long long bint;
-	long long intdiff = abs(aint - bint);
-
-	/* Make aInt lexicographically ordered as a twos-complement int */
-	aint = *(long long *)&A;
-	if (aint < 0)
-		aint = 0x80000000 - aint;
-
-	/* Make bInt lexicographically ordered as a twos-complement int */
-	bint = *(long long*)&B;
-	if (bint < 0)
-		bint = 0x80000000 - bint;
-
-	intdiff = abs(aint - bint);
-	if (intdiff <= maxulps)
-		return 1;
-
-	return 0;
-}
-
 void SchedulabilityAnalysis::computePrecedenceInfluency()
 {
 	int s, i, j, k, p, t;
@@ -488,8 +459,7 @@ void SchedulabilityAnalysis::computePrecedenceInfluency()
 										if (tasks[j].getPriority() < tasks[p].getPriority())
 											Ip += tasks[p].getPrecedenceInfluence(Ipa);
 
-							if (almostequal2s_complement(Ip, Ipa, 1 << 22))
-								success = 1;
+							success = (fabs(Ip - Ipa) <= DBL_EPSILON);
 						}
 						tasks[j].setIp(Ip);
 					}
