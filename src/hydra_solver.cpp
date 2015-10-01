@@ -19,6 +19,7 @@
 #include <signal.h>
 
 #include <akaroa.H>
+#include <akaroa/distributions.H>
 
 #include <analysis.h>
 #include <gcd_hash.h>
@@ -31,7 +32,7 @@ static double deadline_min = 10, deadline_max = 50;
 static double period_min = 10, period_max = 50;
 static bool compare_no_lp = 0;
 static bool compute_power = false;
-
+static IloNumArray2 period_ranges;
 
 /* shared memory */
 /* reflects always the last thread execution */
@@ -53,14 +54,9 @@ struct thread_data {
 	IloNumArray2 *cycles;/*procs*/
 };
 
-static double inline next_ak(double min, double max) {
-	double v;
-
-	v = AkRandomReal();
-	v *= (max - min);
-	v += min;
-
-	return v;
+static double inline next_ak(double min, double max)
+{
+	return Uniform(min, max);
 }
 
 static const char *short_options = "hvpa:u:f:s:r:n:l:m:c";
@@ -103,6 +99,15 @@ static int read_ranges(char *range_file_name)
 	file >> wcec_min >> wcec_max
 		>> period_min >> period_max
 		>> deadline_min >> deadline_max;
+
+	return 0;
+}
+
+static int read_period_ranges(char *range_file_name)
+{
+	ifstream file(range_file_name);
+
+	file >> period_ranges;
 
 	return 0;
 }
@@ -196,11 +201,14 @@ static int gen_utilization_model(double max_u, double max_ui, int nprocs,
 				IloNumArray2 &cycles)
 {
 	int i, j;
-	double cycle_factor[nprocs], cur_u;
+	double cycle_factor[nprocs], cur_u, min_ui = max_ui - 0.2;
+	IloNumArray utilization = IloNumArray(priority.getEnv());
+	IloDataCollection s;
 
 	priority.clear();
 	period.clear();
 	deadline.clear();
+	utilization.clear();
 	for (j = 0; j < nprocs; j++) {
 		cycles[j].clear();
 		cycle_factor[j] = next_ak(0.8, 0.9);
@@ -208,25 +216,51 @@ static int gen_utilization_model(double max_u, double max_ui, int nprocs,
 	cycle_factor[0] = 1.0;
 	i = 0; cur_u = 0.0;
 	while(cur_u < max_u) {
-		double p_i, u_i, c_i, cycles_i;
+		double p_i, u_i, x, s;
+		int range = UniformInt(0, period_ranges.getSize() - 1);
 
-		u_i = next_ak(0.001, max_ui);
+		/*
+		 * Normally distributed between 10% and
+		 * max_ui.
+		 */
+		x = (max_ui + min_ui) / 2.0;
+		x *= 100.0;
+		s = sqrt(max_ui * 100.0 - x);
+		u_i = Normal(x, s);
+		u_i /= 100.0;
 		if ((u_i + cur_u) > max_u)
 			u_i -= (u_i + cur_u) - max_u;
-		p_i = next_ak(period_min, period_max);
+		if (u_i < min_ui)
+			u_i = min_ui;
+		p_i = Uniform(period_ranges[range][0],
+				period_ranges[range][1]);
+		utilization.add(u_i);
+		deadline.add(p_i);
+		period.add(p_i); /* period == deadline */
+
+		cur_u += u_i;
+		i++;
+	}
+	s.sort(deadline);
+	s.sort(period);
+	int n = i; i = 0;
+	while (i < n) {
+		double p_i, u_i, c_i, cycles_i;
+
+		p_i = period[i];
+		u_i = utilization[i];
 		c_i = u_i * p_i; /* at max speed */
 		cycles_i = c_i * max_freq;
 
-		priority.add(i);
-		deadline.add(p_i);
-		period.add(p_i); /* period == deadline */
-		cycles[0].add(cycles_i);
+		cycles[0].add(ceil(cycles_i));
 		for (j = 1; j < nprocs; j++)
-			cycles[j].add(cycles_i * cycle_factor[j]);
+			cycles[j].add(ceil(cycles_i * cycle_factor[j]));
 
+		priority.add(n - i);
 		i++;
-		cur_u += u_i;
 	}
+
+	utilization.end();
 
 	return 0;
 }
@@ -255,7 +289,7 @@ static int gen_task_model(int ntasks, int nprocs, IloEnv env, IloNumArray &prior
 	return 0;
 }
 
-void execute_solver(struct thread_data *tdata, string solver_cmd)
+bool execute_solver(struct thread_data *tdata, string solver_cmd)
 {
 	std::string result = "", filename = "";
 	ofstream mfile;
@@ -264,7 +298,7 @@ void execute_solver(struct thread_data *tdata, string solver_cmd)
 
 	pipe = popen("mktemp /tmp/fileXXXXXXXX", "r");
 	if (!pipe)
-		return;
+		return false;
 
 	while (!feof(pipe)) {
 		if (fgets(buffer, 128, pipe) != NULL)
@@ -287,7 +321,7 @@ void execute_solver(struct thread_data *tdata, string solver_cmd)
 	result = solver_cmd + " " + filename;
 	pipe = popen(result.c_str(), "r");
 	if (!pipe)
-		return;
+		return false;
 
 	result = "";
 	while (!feof(pipe)) {
@@ -295,12 +329,11 @@ void execute_solver(struct thread_data *tdata, string solver_cmd)
 			result += buffer;
 	}
 	pclose(pipe);
-
-	sscanf(result.c_str(), "%d %ld %lf", &tdata->good,
-					&tdata->etimes,
-					&tdata->energyS);
-
 	system((std::string("rm -rf ") + filename).c_str());
+
+	return sscanf(result.c_str(), "%d %ld %lf", &tdata->good,
+					&tdata->etimes,
+					&tdata->energyS) == 3;
 }
 
 void leave(int sig) {
@@ -328,6 +361,9 @@ int main(int argc, char *argv[])
 	char *solvers_file_name = NULL;
 	char *range_file_name = NULL;
 	vector <string> solvers;
+	vector <double> timeset;
+	vector <double> energyset;
+	bool allgood;
 
 	(void) signal(SIGTERM,leave);
 
@@ -440,7 +476,12 @@ int main(int argc, char *argv[])
 	if (err < 0)
 		return err;
 
-	err = read_ranges(range_file_name);
+	if (u_total > 0) {
+		period_ranges = IloNumArray2(env);
+		err = read_period_ranges(range_file_name);
+	} else {
+		err = read_ranges(range_file_name);
+	}
 	if (err < 0)
 		return err;
 
@@ -468,11 +509,21 @@ int main(int argc, char *argv[])
 	/*
 	 * For now we are assuming a fixed number of parameters
 	 * per solver:
-	 * 1. Energy
-	 * 2. Execution time
-	 * 3. Feasibility
+	 * 1. Feasibility: Always sent to akaroa2. Represents the
+	 *		   ratio that the test can find feasible
+	 *		   solutions for a given simulation setup.
+	 * 2. Execution time feasible: Sent to akaroa2 only if the
+	 *		   test succeed to find a feasible solution.
+	 *		   Represents how long the test spends
+	 *		   attempting to find  the optimal a configuration
+	 *		   in a simulation setup that has feasible solution.
+	 * 3. Energy feasible: Sent to akaroa2 only if the test
+	 *		       finds a feasible solution and all other
+	 *		       tests as well. Represents
+	 *		       the minimal energy the test can find
+	 *		       for a given simulation setup.
 	 */
-	AkDeclareParameters(nsolvers * nparams);
+	AkDeclareParameters(nsolvers * 3 - 1);
 
 	while (!AkSimulationOver()) {
 
@@ -492,14 +543,47 @@ int main(int argc, char *argv[])
 			return err;
 		}
 
+		allgood = true;
+		timeset.clear();
+		energyset.clear();
 		for (i = 0; i < nsolvers; i++) {
-			execute_solver(tdata, solvers[i]);
-
-			if (tdata->good) {
-				AkParamObservation(i * 3 + 1, tdata->energyS);
-				AkParamObservation(i * 3 + 2, tdata->etimes);
+			err = execute_solver(tdata, solvers[i]);
+			if (!err) {
+				allgood = false;
+				continue;
 			}
-			AkParamObservation(i * 3 + 3, tdata->good);
+
+			AkParamObservation(i + 1, tdata->good);
+			if (tdata->good) {
+				timeset.push_back(tdata->etimes);
+				energyset.push_back(tdata->energyS);
+			} else {
+				allgood = false;
+			}
+		}
+
+		if (allgood) {
+			double ref = energyset[0];
+			bool allless = true;
+
+			for (i = 1; i < nsolvers; i++)
+				if (ref > energyset[i])
+					allless = false;
+
+			if (!allless)
+				continue;
+			for (i = 0; i < nsolvers; i++) {
+				int var;
+
+				var = nsolvers + i + 1;
+				AkParamObservation(var, timeset[i]);
+			}
+			for (i = 1; i < nsolvers; i++) {
+				int var;
+				var = nsolvers * 2 + i;
+				AkParamObservation(var,
+						abs(energyset[i] - ref) / ref);
+			}
 		}
 	}
 
