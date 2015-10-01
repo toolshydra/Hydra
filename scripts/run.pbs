@@ -1,0 +1,56 @@
+#!/bin/bash
+#PBS -l ncpus=48
+#PBS -l walltime=168:00:00
+
+#PBS -N simulation_ak 
+
+#PBS -j oe
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/home/eduardo.valentin/lib
+
+
+AK_HOME=/home/eduardo.valentin
+AKRUN=$AK_HOME/bin/akrun
+AK_INSTANCES=48
+
+SCHED_HOME=/home/eduardo.valentin/Hydra
+SIM=$SCHED_HOME/src/hydra_solver
+LOG=$SCHED_HOME/results/utilization_vs_exact_ref_0.95_rm_fix_prio_order
+AK_PARAMS=$SCHED_HOME/models/simulation_sample/ak_params.txt
+
+LP=0.45
+
+export PATH=$PATH:$SCHED_HOME/src
+
+
+mkdir -p $LOG
+
+for t in lp ; do
+	if [ "$t" == "lp" ] ; then
+		PARAM=""
+		NTASKS=1
+	else
+		PARAM="--compare-no-lp"
+		NTASKS=1
+	fi
+	RANGES=$SCHED_HOME/models/simulation_${t}/modelsimperiodrange.txt
+	for c in 1 ; do
+		FREQS=$SCHED_HOME/models/simulation_${t}/modelsimfreqs-${c}cluster.txt
+		SOLVERS_CONFIG=$SCHED_HOME/models/simulation_${t}/solvers_config.txt
+		for p in 1.6 ; do
+			TEMPFS="$SIM --freq-file=$FREQS --range-file=$RANGES --processor-count=4 --u-total=$p --max-ui=0.5 --task-count=$NTASKS --switch-latency=$LP $PARAM --solvers-file=$SOLVERS_CONFIG"
+#			echo "$TEMPFS" > $LOG/result_${t}_${c}_${p}.txt
+#			date >> $LOG/result_${t}_${c}_${p}.txt
+			cd $PBS_O_WORKDIR
+
+			echo $AKRUN -n $AK_INSTANCES -s -f $AK_PARAMS -- $TEMPFS 
+			$AKRUN -r $AK_INSTANCES:933588178 -n $AK_INSTANCES -s -f $AK_PARAMS -- $TEMPFS 
+#			date >> $LOG/result_${t}_${c}_${p}.txt
+#			rm /tmp/file*
+			#somehow we are not able to clean this properly
+			for i in  `ps aux | grep pseudosim | awk '{print $2}'` ; do kill -9 $i ; done
+			for i in  `ps aux | grep solver | awk '{print $2}'` ; do kill -9 $i ; done
+		done
+	done
+done
+
+
