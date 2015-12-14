@@ -81,10 +81,11 @@ ILOINCUMBENTCALLBACK2(TightCallback, IloArray<IloArray<IloNumVarArray> > &, vars
 	dec.end();
 }
 
-static const char *short_options = "hstm:";
+static const char *short_options = "hsd:tm:";
 static const struct option long_options[] = {
 	{ "help",     0, NULL, 'h' },
 	{ "model",     0, NULL, 'm' },
+	{ "deadline",     required_argument, NULL, 'd' },
 	{ "solution",     0, NULL, 's' },
 	{ "statistics",     0, NULL, 't' },
 	{ NULL,       0, NULL, 0   },   /* Required at end of array.  */
@@ -96,6 +97,7 @@ static void print_usage(char *program_name)
 	printf(
 	"  -h  --help                             Display this usage information.\n"
 	"  -m  --model=<modelfile>                Read model specification from modelfile.\n"
+	"  -d  --deadline=<seconds>               Limit the execution to seconds.\n"
 	"  -s  --solution                         Print at the end the found solution.\n"
 	"  -t  --statistics                       Print at the end the feasibility, processing time, and minimum energy found.\n");
 
@@ -188,6 +190,7 @@ int main(int argc, char **argv)
 	long etimes;
 	double energyS;
 	int next_option;
+	double seconds = 0.0; /* Infinite */
 
 	/* Read command line options */
 	do {
@@ -199,6 +202,14 @@ int main(int argc, char **argv)
 		case 'h':   /* -h or --help */
 			print_usage(argv[0]);
 			return 0;
+		case 'd':   /* -d or --deadline */
+			if (!optarg) {
+				fprintf(stderr, "Specify the number of seconds.\n");
+				print_usage(argv[0]);
+				return -EINVAL;
+			}
+			seconds = strtod(optarg, NULL);
+			break;
 		case 'm':   /* -m or --model */
 			if (!optarg) {
 				fprintf(stderr, "Specify file with model.\n");
@@ -313,6 +324,10 @@ int main(int argc, char **argv)
 
 		IloCplex cplex(env);
 		cplex.setOut(env.getNullStream());
+		if (seconds > 0.0) {
+			cplex.setParam(IloCplex::Param::ClockType, 2); /* Wallclock */
+			cplex.setParam(IloCplex::TiLim, seconds);
+		}
 		cplex.extract(model);
 
 		gettimeofday(&st, NULL);
