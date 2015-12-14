@@ -20,22 +20,22 @@ static IloNumArray priority;
 static IloNumArray period;
 static IloNumArray Deadline;
 
-ILOINCUMBENTCALLBACK1(TightCallback, IloArray<IloArray<IloNumVarArray> > &, vars) {
+ILOINCUMBENTCALLBACK2(TightCallback, IloArray<IloArray<IloNumVarArray> > &, vars, IloEnv &, _env) {
 	struct runInfo runtime;
 	double sp, bound;
 	int s, i, j, k;
 	vector <class Task> tasks;
-	IloNumArray4 dec(getEnv(), 1);
+	IloNumArray4 dec(_env, 1);
 
 	runtime.setVerbose(false);
 	runtime.setList(false);
 
 	for (s = 0; s < 1; s++) {
-		dec[s] = IloNumArray3(getEnv(), nAgents);
+		dec[s] = IloNumArray3(_env, nAgents);
 		for (i = 0; i < nAgents; i++) {
-			dec[s][i] = IloNumArray2(getEnv(), nTasks);
+			dec[s][i] = IloNumArray2(_env, nTasks);
 			for (j = 0; j < nTasks; j++) {
-				dec[s][i][j] = IloNumArray(getEnv(), nLevels, 0, 1, ILOINT);
+				dec[s][i][j] = IloNumArray(_env, nLevels, 0, 1, ILOINT);
 				for (k = 0; k < nLevels; k++) {
 					dec[s][i][j][k] = getValue(vars[i][j][k]);
 				}
@@ -44,7 +44,7 @@ ILOINCUMBENTCALLBACK1(TightCallback, IloArray<IloArray<IloNumVarArray> > &, vars
 	}
 	tasks.clear();
 	for (j = 0; j < nTasks; j++) {
-		Task t(getEnv());
+		Task t(_env);
 
 		t.setPriority(priority[j]);
 		t.setPeriod(period[j]);
@@ -60,13 +60,24 @@ ILOINCUMBENTCALLBACK1(TightCallback, IloArray<IloArray<IloNumVarArray> > &, vars
 		tasks.push_back(t);
 	}
 
-	SchedulabilityAnalysis sched(getEnv(), runtime, nTasks,
+	SchedulabilityAnalysis sched(_env, runtime, nTasks,
 					0, /* nresources */
 					0.0, /* Lp */
 					frequency, voltage, tasks, dec);
 
 	if (sched.evaluateUtilization(1.0, sp) == false)
 		reject();
+	tasks.clear();
+	for (s = 0; s < 1; s++) {
+		for (i = 0; i < nAgents; i++) {
+			for (j = 0; j < nTasks; j++) {
+				dec[s][i][j].end();
+			}
+			dec[s][i].end();
+		}
+		dec[s].end();
+	}
+	dec.end();
 }
 
 static const char *short_options = "hstm:";
@@ -304,7 +315,7 @@ int main(int argc, char **argv)
 		cplex.extract(model);
 
 		gettimeofday(&st, NULL);
-		cplex.use(TightCallback(env, x));
+		cplex.use(TightCallback(env, x, env));
 		cplex.solve();
 		gettimeofday(&e, NULL);
 		etimes = get_execution_time(st, e);

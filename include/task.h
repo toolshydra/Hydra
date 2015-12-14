@@ -33,9 +33,13 @@ private:
 	double Ij;
 	IloNumArray resources;
 public:
-	Task(IloEnv env) :resources(env)
+	Task(IloEnv &env) :resources(env)
 	{
 		period = deadline = wcec = computation = Ip = Ib = Ij = 0.0;
+	}
+	~Task()
+	{
+	//	resources.end();
 	}
 	void setPriority(int priority)
 	{

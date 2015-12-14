@@ -32,16 +32,27 @@ private:
 
 	bool loaded;
 
-	vector <class Task> tasks;
 
-	IloNumArray2 frequencies;
-	IloNumArray2 voltages;
-	IloNumArray2 pdyn;
-	IloNumArray2 pidle;
+	/* This has to be shadowed */
+	vector <class Task> _tasks;
+	IloNumArray2 _frequencies;
+	IloNumArray2 _voltages;
+	IloNumArray2 _pdyn;
+	IloNumArray2 _pidle;
 
-	IloNumArray4 assignment;
+	IloNumArray4 _assignment;
 
-	IloNumArray resourcePriorities;
+	IloNumArray _resourcePriorities;
+
+	vector <class Task> &tasks;
+	IloNumArray2 &frequencies;
+	IloNumArray2 &voltages;
+	IloNumArray2 &pdyn;
+	IloNumArray2 &pidle;
+
+	IloNumArray4 &assignment;
+
+	IloNumArray &resourcePriorities;
 
 	runInfo runConfig;
 	const char *fileModel;
@@ -61,15 +72,27 @@ private:
 	long long computeLCM(void);
 public:
 	/* Constructors */
-	SchedulabilityAnalysis(IloEnv env, runInfo runtime);
-	SchedulabilityAnalysis(IloEnv env, runInfo runtime, const char *filename, bool useAssignment);
-	SchedulabilityAnalysis(IloEnv env, runInfo runtime, int ntask,
-		int nresources, double lp, IloNumArray2 freqs, IloNumArray2 volts,
-		vector <class Task> tset, IloNumArray4 assig);
+	SchedulabilityAnalysis(IloEnv &env, runInfo runtime);
+	SchedulabilityAnalysis(IloEnv &env, runInfo runtime, const char *filename, bool useAssignment);
+	SchedulabilityAnalysis(IloEnv &env, runInfo runtime, int ntask,
+		int nresources, double lp, IloNumArray2 &freqs, IloNumArray2 &volts,
+		vector <class Task> &tset, IloNumArray4 &assig);
 
-	SchedulabilityAnalysis(IloEnv env, runInfo runtime, int ntask,
-		int nresources, double lp, IloNumArray2 freqs, IloNumArray2 power_dyn,
-		IloNumArray2 power_idle, vector <class Task> tset, IloNumArray4 assig);
+	SchedulabilityAnalysis(IloEnv &env, runInfo runtime, int ntask,
+		int nresources, double lp, IloNumArray2 &freqs, IloNumArray2 &power_dyn,
+		IloNumArray2 &power_idle, vector <class Task> &tset, IloNumArray4 &assig);
+	~SchedulabilityAnalysis()
+	{
+		_tasks.clear();
+		_frequencies.end();
+		_voltages.end();
+		_pdyn.end();
+		_pidle.end();
+
+		_assignment.end();
+
+		_resourcePriorities.end();
+	}
 	/* Schedulability Analysis */
 	void computeAnalysis();
 	bool evaluateResponse(double &spread);
@@ -77,7 +100,7 @@ public:
 	double computeSystemEnergy(void);
 
 	/* IO */
-	void readModel();
+	void readModel(IloEnv &env);
 	void printTaskModel();
 	void printTaskInfluencies();
 	void printTaskAnalysis();

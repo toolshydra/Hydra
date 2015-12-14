@@ -20,8 +20,10 @@
 #include <string>
 
 /* Constructors */
-SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime)
-	:frequencies(env), voltages(env), resourcePriorities(env), assignment(env),
+SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv &env, runInfo runtime)
+	:tasks(_tasks), frequencies(_frequencies), voltages(_voltages),
+	pdyn(_pdyn), pidle(_pidle), assignment(_assignment),
+	resourcePriorities(_resourcePriorities),
 	nClusters(0), nProcessors(0), nTasks(0), nFrequencies(0), nResources(0),
 	Lp(0.0), runConfig(runtime), fileModel("model.txt"), loaded(false)
 {
@@ -29,13 +31,15 @@ SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime)
 	if (runConfig.getVerbose())
 		cout << runConfig;
 
-	readModel();
+	readModel(env);
 	distributeTaskFrequencies();
 }
 
-SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime, const char *filename,
+SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv &env, runInfo runtime, const char *filename,
 						bool useAssignment)
-	:frequencies(env), voltages(env), pdyn(env), pidle(env), resourcePriorities(env), assignment(env),
+	:tasks(_tasks), frequencies(_frequencies), voltages(_voltages),
+	pdyn(_pdyn), pidle(_pidle), assignment(_assignment),
+	resourcePriorities(_resourcePriorities),
 	nClusters(0), nProcessors(0), nTasks(0), nFrequencies(0), nResources(0),
 	Lp(0.0), runConfig(runtime), fileModel(filename), loaded(false)
 {
@@ -43,17 +47,19 @@ SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime, cons
 	if (runConfig.getVerbose())
 		cout << runConfig;
 
-	readModel();
+	readModel(env);
 
 	if (useAssignment)
 		distributeTaskFrequencies();
 
 }
 
-SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime, int ntask,
-		int nresources, double lp, IloNumArray2 freqs, IloNumArray2 volts,
-		vector <class Task> tset, IloNumArray4 assig)
-	:frequencies(freqs), voltages(volts), resourcePriorities(env), assignment(assig),
+SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv &env, runInfo runtime, int ntask,
+		int nresources, double lp, IloNumArray2 &freqs, IloNumArray2 &volts,
+		vector <class Task> &tset, IloNumArray4 &assig)
+	:frequencies(freqs), voltages(volts),
+	pdyn(_pdyn), pidle(_pidle), assignment(assig),
+	resourcePriorities(_resourcePriorities),
 	nClusters(assig.getSize()), nProcessors(assig[0].getSize()),
 	nTasks(assig[0][0].getSize()), nFrequencies(assig[0][0][0].getSize()),
 	nResources(nresources), tasks(tset), Lp(lp), runConfig(runtime), fileModel(""), loaded(true)
@@ -72,11 +78,13 @@ SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime, int 
 	/* TODO: computePower() */
 }
 
-SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime, int ntask,
-		int nresources, double lp, IloNumArray2 freqs, IloNumArray2 power_dyn,
-		IloNumArray2 power_idle, vector <class Task> tset, IloNumArray4 assig)
-	:frequencies(freqs), pdyn(power_dyn), pidle(power_idle), resourcePriorities(env),
-	assignment(assig), nClusters(assig.getSize()), nProcessors(assig[0].getSize()),
+SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv &env, runInfo runtime, int ntask,
+		int nresources, double lp, IloNumArray2 &freqs, IloNumArray2 &power_dyn,
+		IloNumArray2 &power_idle, vector <class Task> &tset, IloNumArray4 &assig)
+	:frequencies(freqs), voltages(_voltages),
+	pdyn(power_dyn), pidle(power_idle), assignment(assig),
+	resourcePriorities(_resourcePriorities),
+	nClusters(assig.getSize()), nProcessors(assig[0].getSize()),
 	nTasks(assig[0][0].getSize()), nFrequencies(assig[0][0][0].getSize()),
 	nResources(nresources), tasks(tset), Lp(lp), runConfig(runtime), fileModel(""), loaded(true)
 {
@@ -94,7 +102,7 @@ SchedulabilityAnalysis::SchedulabilityAnalysis(IloEnv env, runInfo runtime, int 
 
 /* IO */
 /* Reads task model, architecture model and power model */
-void SchedulabilityAnalysis::readModel()
+void SchedulabilityAnalysis::readModel(IloEnv &env)
 {
 	int ntasks, nresources, i;
 
@@ -117,7 +125,7 @@ void SchedulabilityAnalysis::readModel()
 
 	i = 0;
 	do {
-		class Task t(frequencies.getEnv());
+		class Task t(env);
 
 		file >> t;
 
