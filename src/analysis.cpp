@@ -369,6 +369,43 @@ bool SchedulabilityAnalysis::evaluateUtilization(double bound, double &u)
 	return true;
 }
 
+void SchedulabilityAnalysis::computeTotalUtilization(double &u)
+{
+	int s, i, j, k;
+	double sum = 0.0;
+
+	if (Lp > 0.0)
+		computeArchitectureInfluence();
+	for (s = 0; s < nClusters; s++)
+		for (i = 0; i < nProcessors; i++) {
+			double ui = 0.0;
+			double si = 0.0;
+			int n = 0;
+
+			for (j = 0; j < nTasks; j++)
+				for (k = 0; k < nFrequencies; k++)
+					if (assignment[s][i][j][k] != 0) {
+						ui += tasks[j].getUtilization();
+						n++;
+						if (Lp > 0.0)
+							si += tasks[j].getIa() / tasks[j].getPeriod();
+					}
+			if (runConfig.getVerbose())
+				cout << "U[" << s << "," << i << "] = " <<
+					std::fixed << std::setw(21) << std::setprecision(4) <<
+					ui << "% + "<< si << "% = " << ui + si << "%" << endl;
+
+			sum += (ui + si);
+		}
+
+	u = sum / (nProcessors * nClusters);
+
+	if (runConfig.getVerbose()) {
+		cout << endl;
+		cout << "Total System Utilization: " << u << endl;
+	}
+}
+
 /*
  * distributeTaskFrequencies: Compute resource priorities
  * @complexity: O(nClusters x nProcessors x ntasks x nFrequencies)

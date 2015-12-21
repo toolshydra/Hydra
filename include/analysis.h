@@ -97,6 +97,7 @@ public:
 	void computeAnalysis();
 	bool evaluateResponse(double &spread);
 	bool evaluateUtilization(double bound, double &u);
+	void computeTotalUtilization(double &u);
 	double computeSystemEnergy(void);
 
 	/* IO */
