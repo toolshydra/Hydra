@@ -81,6 +81,70 @@ ILOINCUMBENTCALLBACK2(TightCallback, IloArray<IloArray<IloNumVarArray> > &, vars
 	dec.end();
 }
 
+static void dumpConfigurationInfo(IloEnv &_env,
+		IloCplex &cplex,
+		IloArray<IloArray<IloNumVarArray> > &vars)
+{
+	struct runInfo runtime;
+	double sp;
+	int s, i, j, k;
+	vector <class Task> tasks;
+	IloNumArray4 dec(_env, 1);
+
+	runtime.setVerbose(true);
+	runtime.setList(false);
+
+	for (s = 0; s < 1; s++) {
+		dec[s] = IloNumArray3(_env, nAgents);
+		for (i = 0; i < nAgents; i++) {
+			dec[s][i] = IloNumArray2(_env, nTasks);
+			for (j = 0; j < nTasks; j++) {
+				dec[s][i][j] = IloNumArray(_env, nLevels, 0, 1, ILOINT);
+				for (k = 0; k < nLevels; k++) {
+					dec[s][i][j][k] = cplex.getValue(vars[i][j][k]);
+				}
+			}
+		}
+	}
+	tasks.clear();
+	for (j = 0; j < nTasks; j++) {
+		Task t(_env);
+
+		t.setPriority(priority[j]);
+		t.setPeriod(period[j]);
+		t.setDeadline(Deadline[j]);
+		t.setIp(0.0); /* do not touch for now */
+		t.setIb(0.0);/* do not touch for now */
+		t.setIa(0.0); /* do not touch for now */
+		t.setIj(0.0); /* do not touch for now */
+		for (i = 0; i < nAgents; i++)
+			for (k = 0; k < nLevels; k++)
+				if (dec[0][i][j][k])
+					t.setWcec(cycles[i][j]);
+		tasks.push_back(t);
+	}
+
+	SchedulabilityAnalysis sched(_env, runtime, nTasks,
+					0, /* nresources */
+					0.0, /* Lp */
+					frequency, voltage, tasks, dec);
+
+	sched.computeAnalysis();
+	sched.evaluateResponse(sp);
+	sched.computeTotalUtilization(sp);
+	tasks.clear();
+	for (s = 0; s < 1; s++) {
+		for (i = 0; i < nAgents; i++) {
+			for (j = 0; j < nTasks; j++) {
+				dec[s][i][j].end();
+			}
+			dec[s][i].end();
+		}
+		dec[s].end();
+	}
+	dec.end();
+}
+
 static const char *short_options = "hsd:tm:";
 static const struct option long_options[] = {
 	{ "help",     0, NULL, 'h' },
@@ -354,15 +418,20 @@ int main(int argc, char **argv)
 
 		if (solution) {
 			cout << "Optimal System Energy: " << cplex.getObjValue() << endl;
-			for(i = 0; i < nAgents; i++)
-				for(j = 0; j < nTasks; j++)
-					for(k = 0; k < nLevels; k++)
-						if (cplex.getValue(x[i][j][k]) == 1)
-							cout << "Task[" << j
+			for(i = 0; i < nAgents; i++) {
+				for(j = 0; j < nTasks; j++) {
+					for(k = 0; k < nLevels; k++) {
+						if (cplex.getValue(x[i][j][k])) {
+							cout << cplex.getValue(x[i][j][k]) << " Task[" << j
 								<< "] runs in processor " << i
 								<< " at level [" << k << "] ("
 								<< frequency[i][k] << "Hz@"
 								<< voltage[i][k] << "V)" << endl;
+						}
+					}
+				}
+			}
+			dumpConfigurationInfo(env, cplex, x);
 		}
 
 		cplex.end();
