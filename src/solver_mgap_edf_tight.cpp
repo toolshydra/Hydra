@@ -133,6 +133,7 @@ static void dumpConfigurationInfo(IloEnv &_env,
 	sched.evaluateResponse(sp);
 	sched.computeTotalUtilization(sp);
 	tasks.clear();
+	cout << "decision variable: " << endl << dec[0] << endl;
 	for (s = 0; s < 1; s++) {
 		for (i = 0; i < nAgents; i++) {
 			for (j = 0; j < nTasks; j++) {
@@ -145,7 +146,7 @@ static void dumpConfigurationInfo(IloEnv &_env,
 	dec.end();
 }
 
-static const char *short_options = "hsd:tm:r";
+static const char *short_options = "hsd:tm:ri";
 static const struct option long_options[] = {
 	{ "help",     0, NULL, 'h' },
 	{ "model",     0, NULL, 'm' },
@@ -164,7 +165,8 @@ static void print_usage(char *program_name)
 	"  -m  --model=<modelfile>                Read model specification from modelfile.\n"
 	"  -d  --deadline=<seconds>               Limit the execution to seconds.\n"
 	"  -s  --solution                         Print at the end the found solution.\n"
-	"  -s  --relax-integrity		  Execute with relaxed integrity.\n"
+	"  -i  --initial-point		  	  Start search from a known solution as starting point (read from model).\n"
+	"  -r  --relax-integrity		  Execute with relaxed integrity.\n"
 	"  -t  --statistics                       Print at the end the feasibility, processing time, and minimum energy found.\n");
 
 }
@@ -252,7 +254,8 @@ int main(int argc, char **argv)
 	struct timeval st, e;
 	const char* filename  = "mgap-rm.dat";
 	IloEnv env;
-	bool good, stats = false, solution = false, relax_int = false;
+	IloNumArray3 sol(env);
+	bool good, stats = false, solution = false, relax_int = false, init = false;
 	long etimes;
 	double energyS;
 	int next_option;
@@ -290,6 +293,9 @@ int main(int argc, char **argv)
 		case 'r':   /* -r or --relax-integrity */
 			relax_int = true;
 			break;
+		case 'i':   /* -r or --initial-point */
+			init = true;
+			break;
 		case 't':   /* -t or --statistics */
 			stats = true;
 			break;
@@ -318,6 +324,8 @@ int main(int argc, char **argv)
 		period = IloNumArray(env);
 		Deadline = IloNumArray(env);
 		file >> alpha >> priority >> period >> Deadline >> cycles >> voltage >> frequency;
+		if (init)
+			file >> sol;
 
 		nAgents = cycles.getSize();
 		nTasks = period.getSize();
@@ -408,7 +416,27 @@ int main(int argc, char **argv)
 		cplex.setParam(IloCplex::WorkMem, 1024);
 		cplex.setParam(IloCplex::TreLim, 2048);
 		cplex.setParam(IloCplex::Param::Parallel, 1); /* Deterministic */
+
 		cplex.extract(model);
+
+		/* do we have a starting point ? */
+		if (init) {
+			IloNumVarArray startVar(env);
+			IloNumArray startVal(env);
+
+			for (i = 0; i < nAgents; i++)
+				for (j = 0; j < nTasks; j++)
+					for (k = 0; k < nLevels; k++) {
+						startVar.add(x[i][j][k]);
+						startVal.add(sol[i][j][k]);
+					}
+
+			cplex.addMIPStart(startVar, startVal);
+
+			startVar.end();
+			startVal.end();
+
+		}
 
 		gettimeofday(&st, NULL);
 		cplex.use(TightCallback(env, x, env));
