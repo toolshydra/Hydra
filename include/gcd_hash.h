@@ -104,4 +104,73 @@ static int const gcd_lookup[MAX_GCD][MAX_GCD] = {
 {98, 1, 2, 1, 2, 1, 2, 7, 2, 1, 2, 1, 2, 1, 14, 1, 2, 1, 2, 1, 2, 7, 2, 1, 2, 1, 2, 1, 14, 1, 2, 1, 2, 1, 2, 7, 2, 1, 2, 1, 2, 1, 14, 1, 2, 1, 2, 1, 2, 49, 2, 1, 2, 1, 2, 1, 14, 1, 2, 1, 2, 1, 2, 7, 2, 1, 2, 1, 2, 1, 14, 1, 2, 1, 2, 1, 2, 7, 2, 1, 2, 1, 2, 1, 14, 1, 2, 1, 2, 1, 2, 7, 2, 1, 2, 1, 2, 1, 98, 1},
 {99, 1, 1, 3, 1, 1, 3, 1, 1, 9, 1, 11, 3, 1, 1, 3, 1, 1, 9, 1, 1, 3, 11, 1, 3, 1, 1, 9, 1, 1, 3, 1, 1, 33, 1, 1, 9, 1, 1, 3, 1, 1, 3, 1, 11, 9, 1, 1, 3, 1, 1, 3, 1, 1, 9, 11, 1, 3, 1, 1, 3, 1, 1, 9, 1, 1, 33, 1, 1, 3, 1, 1, 9, 1, 1, 3, 1, 11, 3, 1, 1, 9, 1, 1, 3, 1, 1, 3, 11, 1, 9, 1, 1, 3, 1, 1, 3, 1, 1, 99}
 };
+
+static unsigned long long gcd(unsigned long long a, unsigned long long b)
+{
+	long long tmp;
+
+	/* As simple as Euclides told me */
+	while (b != 0) {
+
+		tmp = b;
+		b = a % b;
+		a = tmp;
+	}
+
+	return a;
+}
+
+static unsigned long long gcd_hash(unsigned long long i, unsigned long long j)
+{
+	unsigned long long a, b;
+
+	a = i; b = j;
+
+	if ((a < MAX_GCD) && (b < MAX_GCD)) {
+		return gcd_lookup[a][b];
+	}
+	if ((a % 2) == 0 && (b % 2) == 0) { /* both even*/
+		a = a >> 1; b = b >> 1;
+		if ((a < MAX_GCD) && (b < MAX_GCD))
+			return gcd_lookup[a][b] * 2;
+	} else if ((a % 2) == 1 && (b % 2) == 0) {
+		b = b >> 1;
+		if ((a < MAX_GCD) && (b < MAX_GCD))
+			return gcd_lookup[a][b];
+	} else if ((a % 2) == 0 && (b % 2) == 1) {
+		a = a >> 1;
+		if ((a < MAX_GCD) && (b < MAX_GCD))
+			return gcd_lookup[a][b];
+	}
+
+	return gcd(i, j);
+}
+
+static long long lcm(long long a, long long b)
+{
+	long long tmp = gcd_hash(a, b);
+
+	if (tmp)
+		return (a * b) / tmp;
+
+	return 0;
+}
+
+static long long computeLCM(IloNumArray periods)
+{
+	int j, k;
+	long long LCM;
+
+	LCM = 0;
+	for (j = 0; j < periods.getSize(); j++) {
+		long long period = periods[j];
+
+		if (LCM == 0)
+			LCM = period;
+
+		LCM = lcm(LCM, period);
+	}
+
+	return LCM;
+}
 #endif
