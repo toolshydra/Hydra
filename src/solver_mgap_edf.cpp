@@ -300,14 +300,13 @@ int main(int argc, char **argv)
 		cplex.extract(model);
 
 		if (cut) {
-		        cplex.setParam(IloCplex::CutUp, uppercut + 1);
+		        cplex.setParam(IloCplex::CutUp, uppercut * 1.05);
 		}
 
 		/* do we have a starting point ? */
 		if (init) {
 			IloNumVarArray startVar(env);
 			IloNumArray startVal(env);
-
 			for (i = 0; i < nAgents; i++)
 				for (j = 0; j < nTasks; j++)
 					for (k = 0; k < nLevels; k++) {

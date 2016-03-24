@@ -360,7 +360,7 @@ int main(int argc, char **argv)
 		cplex.extract(model);
 
 		if (cut) {
-		        cplex.setParam(IloCplex::CutUp, uppercut + 1);
+		        cplex.setParam(IloCplex::CutUp, uppercut * 1.05);
 		}
 
 		/* do we have a starting point ? */

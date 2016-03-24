@@ -361,8 +361,7 @@ int main(int argc, char **argv)
 		cplex.extract(model);
 
 		if (cut) {
-		        cplex.setParam(IloCplex::CutUp, uppercut + 1);
-			cout << "uppper cut "<< uppercut + 1 << endl;
+		        cplex.setParam(IloCplex::CutUp, uppercut * 1.05);
 		}
 		/* do we have a starting point ? */
 		if (init) {
