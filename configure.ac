@@ -28,6 +28,7 @@ AC_CHECK_FUNCS([ceil])
 
 AC_OUTPUT([Makefile
                  src/Makefile
+                 src/ga/Makefile
                  doc/Makefile])
 
 #Checks for texinfo, required for building the documentation 
