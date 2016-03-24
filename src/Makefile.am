@@ -2,8 +2,8 @@ SUBDIRS	= ga
 SYSTEM     = x86-64_linux
 LIBFORMAT  = static_pic
 
-CPLEXDIR      = /opt/ibm/ILOG/CPLEX_Studio1251/cplex
-CONCERTDIR    = /opt/ibm/ILOG/CPLEX_Studio1251/concert
+CPLEXDIR      = /opt/ibm/ILOG/CPLEX_Studio1261/cplex
+CONCERTDIR    = /opt/ibm/ILOG/CPLEX_Studio1261/concert
 CONCERTINCDIR = $(CONCERTDIR)/include
 CPLEXINCDIR   = $(CPLEXDIR)/include
 CPLEXLIBDIR   = $(CPLEXDIR)/lib/$(SYSTEM)/$(LIBFORMAT)
