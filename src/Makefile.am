@@ -1,5 +1,5 @@
-SYSTEM     = x86-64_darwin
 SUBDIRS	= ga
+SYSTEM     = x86-64_linux
 LIBFORMAT  = static_pic
 
 CPLEXDIR      = /opt/ibm/ILOG/CPLEX_Studio1251/cplex
